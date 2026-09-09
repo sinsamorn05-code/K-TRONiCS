@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>K-TRONiCS ERP</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --tg-blue: #2AABEE;
+    --tg-blue-dark: #1E96D6;
+    --ink: #17212B;
+    --ink-soft: #6B7A8D;
+    --line: #E4E9EE;
+    --bg: #F4F7FA;
+    --card: #FFFFFF;
+    --danger: #E0555A;
+    --success: #33A85A;
+    --warn: #E0A426;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: 78px;
+  }
+  header {
+    position: sticky; top: 0; z-index: 20; background: var(--card);
+    border-bottom: 1px solid var(--line); padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 16px; font-weight: 700; margin: 0; }
+  header .who { font-size: 11px; color: var(--ink-soft); }
+  #screens { padding: 12px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .search-bar {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .search-bar input, .search-bar select {
+    flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    font-size: 14px; background: var(--card);
+  }
+
+  .card {
+    background: var(--card); border-radius: 14px; padding: 14px;
+    margin-bottom: 10px; border: 1px solid var(--line);
+  }
+  .card .row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card .name { font-weight: 700; font-size: 15px; }
+  .card .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .badge {
+    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge.ok { background: #E7F6EC; color: var(--success); }
+  .badge.warn { background: #FCF2DC; color: var(--warn); }
+  .badge.danger { background: #FBE9EA; color: var(--danger); }
+  .badge.neutral { background: #EEF1F4; color: var(--ink-soft); }
+
+  .empty-state {
+    text-align: center; padding: 48px 20px; color: var(--ink-soft);
+  }
+  .empty-state .icon { font-size: 34px; margin-bottom: 8px; }
+  .empty-state .title { font-weight: 700; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+  .empty-state .sub { font-size: 13px; }
+
+  .fab {
+    position: fixed; right: 16px; bottom: 92px; z-index: 30;
+    background: var(--tg-blue); color: white; border: none; border-radius: 999px;
+    width: 52px; height: 52px; font-size: 24px; box-shadow: 0 4px 14px rgba(42,171,238,0.4);
+  }
+
+  nav.tabs {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
+    background: var(--card); border-top: 1px solid var(--line);
+    display: flex; padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+  }
+  nav.tabs button {
+    flex: 1; background: none; border: none; padding: 8px 4px; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--ink-soft); font-size: 10px; font-weight: 600;
+  }
+  nav.tabs button .ic { font-size: 20px; }
+  nav.tabs button.active { color: var(--tg-blue); }
+  nav.tabs button.active .ic { transform: scale(1.05); }
+
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 50;
+    background: rgba(23,33,43,0.5);
+  }
+  .modal-overlay.active { display: flex; align-items: flex-end; }
+  .modal-sheet {
+    background: var(--card); width: 100%; max-height: 88vh; overflow-y: auto;
+    border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  .modal-sheet h2 { font-size: 16px; margin: 0 0 14px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px;
+    font-size: 15px; background: #FAFBFC;
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+
+  .order-item-row {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 8px;
+  }
+  .order-item-row select { flex: 2.2; }
+  .order-item-row input { flex: 0.8; text-align: center; }
+  .order-item-row .rm { background: none; border: none; color: var(--danger); font-size: 18px; padding: 4px 8px; }
+  .add-item-btn {
+    width: 100%; padding: 10px; border: 1.5px dashed var(--line); background: none;
+    border-radius: 10px; color: var(--tg-blue); font-weight: 600; font-size: 13px;
+  }
+  .order-total {
+    display: flex; justify-content: space-between; padding: 12px 4px 4px;
+    font-weight: 700; font-size: 16px; border-top: 1px solid var(--line); margin-top: 10px;
+  }
+  .primary-btn {
+    width: 100%; padding: 13px; background: var(--tg-blue); color: white; border: none;
+    border-radius: 12px; font-weight: 700; font-size: 15px; margin-top: 14px;
+  }
+  .primary-btn:disabled { opacity: 0.5; }
+
+  #toast {
+    position: fixed; bottom: 90px; left: 16px; right: 16px; z-index: 60;
+    background: var(--ink); color: white; padding: 12px 16px; border-radius: 12px;
+    font-size: 13px; text-align: center; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  #toast.show { opacity: 1; }
+
+  #gate-screen {
+    position: fixed; inset: 0; z-index: 100; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center;
+  }
+  #gate-screen .box { max-width: 320px; }
+  #gate-screen .icon { font-size: 40px; margin-bottom: 12px; }
+  #gate-screen h2 { font-size: 17px; margin: 0 0 8px; }
+  #gate-screen p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+  <div id="gate-screen">
+    <div class="box">
+      <div class="icon">⏳</div>
+      <h2>Checking access...</h2>
+      <p id="gate-message">Connecting to your ERP system.</p>
+    </div>
+  </div>
+
+  <header>
+    <h1>⚙️ K-TRONiCS ERP</h1>
+    <div class="who" id="who-label"></div>
+  </header>
+
+  <div id="screens">
+
+    <!-- CUSTOMERS SCREEN -->
+    <section id="screen-customers" class="screen active">
+      <div class="search-bar">
+        <input type="text" id="customer-search" placeholder="Search customers..." oninput="renderCustomers()">
+      </div>
+      <div id="customers-list"></div>
+    </section>
+
+    <!-- STOCK SCREEN -->
+    <section id="screen-stock" class="screen">
+      <div class="search-bar">
+        <input type="text" id="stock-search" placeholder="Search products..." oninput="renderStock()">
+      </div>
+      <div id="stock-list"></div>
+    </section>
+
+    <!-- ORDERS SCREEN -->
+    <section id="screen-orders" class="screen">
+      <div class="search-bar">
+        <input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()">
+      </div>
+      <div id="orders-list"></div>
+    </section>
+
+    <!-- DAILY REPORT SCREEN -->
+    <section id="screen-report" class="screen">
+      <div id="report-content"></div>
+    </section>
+
+  </div>
+
+  <button class="fab" id="fab-btn" onclick="handleFabClick()">+</button>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="customers" onclick="switchTab('customers')">
+      <span class="ic">👥</span><span>Customers</span>
+    </button>
+    <button class="tab-btn" data-tab="stock" onclick="switchTab('stock')">
+      <span class="ic">📦</span><span>Stock</span>
+    </button>
+    <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">
+      <span class="ic">📈</span><span>Orders</span>
+    </button>
+    <button class="tab-btn" data-tab="report" onclick="switchTab('report')">
+      <span class="ic">📊</span><span>Today</span>
+    </button>
+  </nav>
+
+  <!-- Add/Edit Customer Modal -->
+  <div class="modal-overlay" id="customer-modal">
+    <div class="modal-sheet">
+      <h2>➕ Add Customer</h2>
+      <div class="field"><label>Customer Name</label><input type="text" id="cf-name"></div>
+      <div class="field-row">
+        <div class="field"><label>Contact No.</label><input type="text" id="cf-contact"></div>
+        <div class="field"><label>Location</label><input type="text" id="cf-location"></div>
+      </div>
+      <div class="field"><label>Address</label><input type="text" id="cf-address"></div>
+      <button class="primary-btn" onclick="submitNewCustomer()">Save Customer</button>
+    </div>
+  </div>
+
+  <!-- New Order Modal -->
+  <div class="modal-overlay" id="order-modal">
+    <div class="modal-sheet">
+      <h2>➕ New Sales Order</h2>
+      <div class="field"><label>Customer</label><select id="of-customer"></select></div>
+      <div id="order-items"></div>
+      <button type="button" class="add-item-btn" onclick="addOrderItemRow()">+ Add Product</button>
+      <div class="order-total"><span>Total</span><span id="order-total-display">$0.00</span></div>
+      <button class="primary-btn" id="submit-order-btn" onclick="submitNewOrder()">Create Order</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+  // ============================================================
+  // CONFIG -- fill this in with your actual Apps Script Web App URL
+  // (Deploy > Manage deployments > copy the /exec URL)
+  // ============================================================
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzR3cNfKIHJ12Pxy_Q1vZFsgzjcmrtoD7WYzpJzt4TCk2oAxFlpUqOLrD2yTg-U929SaQ/exec';
+
+  const tg = window.Telegram ? window.Telegram.WebApp : null;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  let currentUser = null;
+  let customerCache = [];
+  let stockCache = [];
+  let ordersCache = [];
+  let orderMetaCache = { reps: [], customers: [], inventory: [] };
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function apiCall(action, extra) {
+    extra = extra || {};
+    const initData = tg ? tg.initData : '';
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight against Apps Script
+      body: JSON.stringify(Object.assign({ action, initData }, extra))
+    }).then(r => r.json());
+  }
+
+  // ---- Boot sequence ----
+  function boot() {
+    if (!tg || !tg.initData) {
+      document.getElementById('gate-message').innerText =
+        'This app only works when opened from inside Telegram.';
+      return;
+    }
+    apiCall('whoAmI').then(res => {
+      if (!res.success) {
+        document.getElementById('gate-message').innerText = res.message || 'Access denied.';
+        return;
+      }
+      currentUser = res;
+      document.getElementById('who-label').innerText = res.role === 'Admin' ? 'Admin' : res.salesRepName;
+      document.getElementById('gate-screen').style.display = 'none';
+      loadCustomers();
+      loadStock();
+      loadOrders();
+    }).catch(err => {
+      document.getElementById('gate-message').innerText = 'Connection error: ' + err.message;
+    });
+  }
+  window.addEventListener('load', boot);
+
+  // ---- Tabs ----
+  function switchTab(tab) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + tab).classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+    if (tab === 'report') loadReport(); // always fresh -- "today" can change mid-session
+  }
+
+  function handleFabClick() {
+    const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+    if (activeTab === 'customers') openCustomerModal();
+    else if (activeTab === 'orders') openOrderModal();
+    else showToast(activeTab === 'stock' ? 'Stock is view-only here.' : 'This is a summary, nothing to add here.');
+  }
+
+  // ---- CUSTOMERS ----
+  function loadCustomers() {
+    apiCall('getCustomers').then(res => {
+      if (!res.success) return showToast(res.message);
+      customerCache = res.data.rows;
+      renderCustomers();
+    });
+  }
+
+  function renderCustomers() {
+    const q = document.getElementById('customer-search').value.trim().toLowerCase();
+    const list = document.getElementById('customers-list');
+    const filtered = customerCache.filter(c => !q || String(c.Customer_Name || '').toLowerCase().includes(q));
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">👥</div><div class="title">No customers yet</div><div class="sub">Tap + to add your first one</div></div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(c => `
+      <div class="card">
+        <div class="row1">
+          <div>
+            <div class="name">${c.Customer_Name || ''}</div>
+            <div class="meta">${c.Contact_No || 'No phone'} ${c.Location ? '· ' + c.Location : ''}</div>
+          </div>
+          <span class="badge ${String(c.Status).toLowerCase() === 'active' ? 'ok' : 'neutral'}">${c.Status || 'Active'}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function openCustomerModal() {
+    document.getElementById('cf-name').value = '';
+    document.getElementById('cf-contact').value = '';
+    document.getElementById('cf-location').value = '';
+    document.getElementById('cf-address').value = '';
+    document.getElementById('customer-modal').classList.add('active');
+  }
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+  function submitNewCustomer() {
+    const name = document.getElementById('cf-name').value.trim();
+    if (!name) return showToast('Please enter a customer name.');
+    apiCall('saveCustomer', {
+      payload: {
+        Customer_Name: name,
+        Contact_No: document.getElementById('cf-contact').value.trim(),
+        Location: document.getElementById('cf-location').value.trim(),
+        Address: document.getElementById('cf-address').value.trim()
+      }
+    }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast('Customer saved!');
+      closeModal('customer-modal');
+      loadCustomers();
+    });
+  }
+
+  // ---- STOCK -- shows only what THIS rep actually has, not the whole catalog ----
+  function loadStock() {
+    apiCall('getMyRepStock').then(res => {
+      if (!res.success) return showToast(res.message);
+      stockCache = res.items;
+      renderStock();
+    });
+  }
+
+  function renderStock() {
+    const q = document.getElementById('stock-search').value.trim().toLowerCase();
+    const list = document.getElementById('stock-list');
+    const filtered = stockCache.filter(i => !q ||
+      String(i.Product_Name || '').toLowerCase().includes(q) ||
+      String(i.SKU || '').toLowerCase().includes(q));
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">📦</div><div class="title">No stock allocated to you yet</div><div class="sub">Ask your admin to transfer some stock to you</div></div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(i => {
+      const badgeClass = i.MyStock <= 0 ? 'danger' : (i.MyStock <= 5 ? 'warn' : 'ok');
+      return `
+      <div class="card">
+        <div class="row1">
+          <div>
+            <div class="name">${i.Product_Name || ''}</div>
+            <div class="meta">${i.SKU} · $${Number(i.Unit_Price || 0).toFixed(2)}</div>
+          </div>
+          <span class="badge ${badgeClass}">${i.MyStock} yours</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- ORDERS ----
+  function loadOrders() {
+    apiCall('getSalesOrders').then(res => {
+      if (!res.success) return showToast(res.message);
+      ordersCache = groupOrdersBySO(res.data.rows);
+      renderOrders();
+    });
+  }
+
+  function groupOrdersBySO(rows) {
+    const grouped = {};
+    rows.forEach(r => {
+      const id = String(r.SO_Number || '').trim();
+      if (!id) return;
+      if (!grouped[id]) {
+        grouped[id] = { SO_Number: id, Order_Date: r.Order_Date, Customer_Name: r.Customer_Name,
+          Order_Status: r.Order_Status, Payment_Status: r.Payment_Status, Total_Amount: 0 };
+      }
+      grouped[id].Total_Amount += Number(r.Total_Amount) || 0;
+    });
+    return Object.values(grouped).sort((a, b) => String(b.Order_Date).localeCompare(String(a.Order_Date)));
+  }
+
+  function renderOrders() {
+    const q = document.getElementById('orders-search').value.trim().toLowerCase();
+    const list = document.getElementById('orders-list');
+    const filtered = ordersCache.filter(o => !q ||
+      String(o.Customer_Name || '').toLowerCase().includes(q) ||
+      String(o.SO_Number || '').toLowerCase().includes(q));
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="icon">📈</div><div class="title">No orders yet</div><div class="sub">Tap + to create one</div></div>`;
+      return;
+    }
+    const statusClass = { Draft: 'neutral', Confirmed: 'ok', Cancelled: 'danger' };
+    list.innerHTML = filtered.map(o => `
+      <div class="card">
+        <div class="row1">
+          <div>
+            <div class="name">${o.Customer_Name || ''}</div>
+            <div class="meta">${o.SO_Number} · ${o.Order_Date}</div>
+          </div>
+          <span class="badge ${statusClass[o.Order_Status] || 'neutral'}">${o.Order_Status}</span>
+        </div>
+        <div class="row1" style="margin-top:8px;">
+          <span class="meta">${o.Payment_Status}</span>
+          <span style="font-weight:700;">$${o.Total_Amount.toFixed(2)}</span>
+        </div>
+      </div>`).join('');
+  }
+
+  function openOrderModal() {
+    apiCall('getSalesOrderMetaData').then(res => {
+      if (!res.success) return showToast(res.message);
+      orderMetaCache = res.data;
+
+      const custSelect = document.getElementById('of-customer');
+      custSelect.innerHTML = orderMetaCache.customers.map(c => `<option value="${c.Customer_Name}">${c.Customer_Name}</option>`).join('');
+
+      document.getElementById('order-items').innerHTML = '';
+      addOrderItemRow();
+      updateOrderTotal();
+      document.getElementById('order-modal').classList.add('active');
+    });
+  }
+
+  function addOrderItemRow() {
+    const container = document.getElementById('order-items');
+    const row = document.createElement('div');
+    row.className = 'order-item-row';
+
+    // Caps against what THIS rep specifically has (their own Rep_Stock_*
+    // column), not the total across everyone -- Total_Available_Stock would
+    // let someone pick a quantity here that gets rejected at submit time
+    // for exceeding their own real allocation.
+    const myColumn = 'Rep_Stock_' + (currentUser.salesRepName || '');
+    const options = orderMetaCache.inventory.map(inv => {
+      const avail = Number(inv[myColumn]) || 0;
+      const disabled = avail <= 0 ? 'disabled' : '';
+      const label = avail <= 0 ? `${inv.Product_Name} -- none allocated to you` : `${inv.Product_Name} (${avail} yours)`;
+      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${disabled}>${label}</option>`;
+    }).join('');
+
+    row.innerHTML = `
+      <select onchange="onOrderProductChange(this)"><option value="">Select product...</option>${options}</select>
+      <input type="number" min="1" value="1" oninput="updateOrderTotal()">
+      <button type="button" class="rm" onclick="this.closest('.order-item-row').remove(); updateOrderTotal();">✕</button>
+    `;
+    container.appendChild(row);
+  }
+
+  function onOrderProductChange(select) {
+    const opt = select.options[select.selectedIndex];
+    const qtyInput = select.closest('.order-item-row').querySelector('input');
+    const available = Number(opt.getAttribute('data-available')) || 0;
+    qtyInput.setAttribute('max', available);
+    if (Number(qtyInput.value) > available) qtyInput.value = available;
+    updateOrderTotal();
+  }
+
+  function updateOrderTotal() {
+    let total = 0;
+    document.querySelectorAll('.order-item-row').forEach(row => {
+      const select = row.querySelector('select');
+      const qty = Number(row.querySelector('input').value) || 0;
+      const opt = select.options[select.selectedIndex];
+      const price = opt ? Number(opt.getAttribute('data-price')) || 0 : 0;
+      total += qty * price;
+    });
+    document.getElementById('order-total-display').innerText = '$' + total.toFixed(2);
+  }
+
+  function submitNewOrder() {
+    const customer = document.getElementById('of-customer').value;
+    if (!customer) return showToast('Please select a customer.');
+
+    const items = [];
+    document.querySelectorAll('.order-item-row').forEach(row => {
+      const select = row.querySelector('select');
+      const qty = Number(row.querySelector('input').value) || 0;
+      if (select.value && qty > 0) {
+        const opt = select.options[select.selectedIndex];
+        items.push({ sku: select.value, qty: qty, price: Number(opt.getAttribute('data-price')) || 0, product_name: opt.innerText });
+      }
+    });
+    if (items.length === 0) return showToast('Please add at least one product.');
+
+    const btn = document.getElementById('submit-order-btn');
+    btn.disabled = true;
+    btn.innerText = 'Creating...';
+
+    apiCall('saveSalesOrder', {
+      payload: { Customer_Name: customer, Order_Status: 'Confirmed', Paid_Amount: 0, items: items }
+    }).then(res => {
+      btn.disabled = false;
+      btn.innerText = 'Create Order';
+      if (!res.success) return showToast(res.message);
+      showToast('Order created!');
+      closeModal('order-modal');
+      loadOrders();
+      loadStock(); // stock levels just changed
+    });
+  }
+
+  // ---- DAILY REPORT ----
+  function loadReport() {
+    const content = document.getElementById('report-content');
+    content.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><div class="sub">Loading today's summary...</div></div>`;
+    apiCall('getDailyReport').then(res => {
+      if (!res.success) { content.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><div class="title">Couldn't load report</div><div class="sub">${res.message || ''}</div></div>`; return; }
+      renderReport(res);
+    });
+  }
+
+  function renderReport(r) {
+    const content = document.getElementById('report-content');
+    if (r.orderCount === 0) {
+      content.innerHTML = `
+        <div class="card" style="text-align:center; padding: 24px;">
+          <div class="meta" style="margin-bottom:4px;">${r.date}</div>
+          <div class="name" style="font-size:16px;">No confirmed orders yet today</div>
+        </div>`;
+      return;
+    }
+    content.innerHTML = `
+      <div class="card">
+        <div class="meta">${r.date} · ${r.salesRepName || 'You'}</div>
+        <div class="row1" style="margin-top:10px;">
+          <div>
+            <div class="meta">Orders</div>
+            <div class="name" style="font-size:22px;">${r.orderCount}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="meta">Revenue</div>
+            <div class="name" style="font-size:22px; color: var(--success);">$${r.totalRevenue}</div>
+          </div>
+        </div>
+        <div class="row1" style="margin-top:10px;">
+          <span class="meta">Units sold</span>
+          <span style="font-weight:700;">${r.totalUnitsSold}</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="meta" style="margin-bottom:8px;">Customers sold to today (${r.customers.length})</div>
+        ${r.customers.map(c => `<div class="row1" style="padding: 6px 0; border-top: 1px solid var(--line);"><span>${c}</span></div>`).join('')}
+      </div>`;
+  }
+</script>
+</body>
+</html>
