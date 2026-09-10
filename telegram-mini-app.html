@@ -207,7 +207,10 @@
 
     <div class="tab-content active" id="tab-customers">
       <div class="search-bar"><span class="ic">🔍</span><input type="text" id="cust-search" placeholder="Search customers..." oninput="renderCustomers()"></div>
-      <button class="add-btn-full" onclick="openCustomerModal()">➕ Add Customer</button>
+      <div style="display:flex; gap:10px; margin-bottom:14px;">
+        <button class="add-btn-full" style="margin-bottom:0;" onclick="openCustomerModal()">➕ Add Customer</button>
+        <button class="add-btn-full" style="margin-bottom:0; background:var(--success);" onclick="openCheckInModal()">✅ Check In</button>
+      </div>
       <div id="customers-list"></div>
     </div>
 
@@ -311,6 +314,18 @@
     <div class="modal-sheet">
       <div class="modal-header"><button class="back" onclick="closeModal('order-detail-modal')">‹</button><h3>Order Details</h3></div>
       <div class="modal-body" id="order-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- CHECK IN -->
+  <div class="modal-overlay" id="checkin-modal">
+    <div class="modal-sheet">
+      <div class="modal-header"><button class="back" onclick="closeModal('checkin-modal')">‹</button><h3>Check In</h3></div>
+      <div class="modal-body">
+        <div class="search-bar"><span class="ic">🔍</span><input type="text" id="checkin-search" placeholder="Search your shops..." oninput="renderCheckInList()"></div>
+        <button class="add-btn-full" style="background:var(--brand-light); color:var(--brand);" onclick="openNewShopFromCheckIn()">➕ Shop not listed? Add New Shop</button>
+        <div id="checkin-list"></div>
+      </div>
     </div>
   </div>
 
@@ -548,6 +563,53 @@
     document.getElementById('order-detail-modal').classList.add('active');
   }
 
+  // ---- CHECK IN ----
+  let checkInPendingAfterCreate = false; // true while "Add New Shop" was opened FROM the check-in flow
+
+  function openCheckInModal() {
+    document.getElementById('checkin-search').value = '';
+    renderCheckInList();
+    document.getElementById('checkin-modal').classList.add('active');
+  }
+
+  function renderCheckInList() {
+    const q = document.getElementById('checkin-search').value.trim().toLowerCase();
+    const list = document.getElementById('checkin-list');
+    const filtered = customerCache.filter(c => !q || String(c.Customer_Name || '').toLowerCase().includes(q));
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="ic">🏬</div><div class="t">No shops found</div><div class="s">Use "Add New Shop" above if this is a new one</div></div>`;
+      return;
+    }
+    list.innerHTML = filtered.map(c => {
+      const name = c.Customer_Name || 'Unnamed';
+      return `
+      <div class="list-card" onclick="performCheckIn('${String(c.Customer_ID).replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">
+        <div class="avatar" style="background:${avatarColorFor(name)}">${initialsFor(name)}</div>
+        <div class="body"><div class="title">${name}</div><div class="sub">${c.Contact_No || ''}</div></div>
+        <span class="chev">✅</span>
+      </div>`;
+    }).join('');
+  }
+
+  function performCheckIn(customerId, customerName) {
+    apiCall('checkIn', { payload: { customerId, customerName } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast(res.message);
+      closeModal('checkin-modal');
+    });
+  }
+
+  // The new-shop flow used FROM check-in: create the customer first (a new
+  // shop can't be checked into until it actually exists as a customer),
+  // then automatically check in as soon as it's saved -- matches "new shop
+  // needs to be created before check-in can succeed".
+  function openNewShopFromCheckIn() {
+    checkInPendingAfterCreate = true;
+    closeModal('checkin-modal');
+    openCustomerModal();
+  }
+
   function openCustomerModal() {
     document.getElementById('new-cust-name').value = '';
     document.getElementById('new-cust-phone').value = '';
@@ -579,9 +641,14 @@
       Notes: document.getElementById('new-cust-notes').value.trim()
     } }).then(res => {
       if (!res.success) return showToast(res.message);
-      showToast('Customer saved!');
       closeModal('customer-modal');
       loadCustomers();
+      if (checkInPendingAfterCreate) {
+        checkInPendingAfterCreate = false;
+        performCheckIn(res.customerId, name);
+      } else {
+        showToast('Customer saved!');
+      }
     });
   }
 
