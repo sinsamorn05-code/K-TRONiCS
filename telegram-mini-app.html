@@ -1,1021 +1,650 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width,
-                 initial-scale=1.0,
-                 maximum-scale=1.0,
-                 user-scalable=no">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>K-TRONiCS ERP</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --brand: #2563EB;
+    --brand-dark: #1D4ED8;
+    --brand-light: #EFF4FF;
+    --success: #10B981;
+    --success-light: #ECFDF5;
+    --info: #3B82F6;
+    --purple: #8B5CF6;
+    --warning: #F59E0B;
+    --warning-light: #FFFBEB;
+    --danger: #EF4444;
+    --danger-light: #FEF2F2;
+    --bg: #F3F4F6;
+    --card: #FFFFFF;
+    --text: #111827;
+    --text-sub: #6B7280;
+    --border: #E5E7EB;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    overscroll-behavior-y: contain;
+  }
+  input, textarea, select, button { font-family: inherit; font-size: 14px; }
+  button { cursor: pointer; }
 
-  <title>K-TRONiCS ERP</title>
+  #splash-screen {
+    position: fixed; inset: 0; background: linear-gradient(180deg, #1E3A8A 0%, var(--brand) 55%, #3B82F6 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px 24px; z-index: 300; color: #fff; text-align: center;
+  }
+  #splash-screen .logo { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; }
+  #splash-screen .logo span { color: #BFD4FF; }
+  #splash-screen .tagline { font-size: 13px; color: #C7D9FF; margin-top: 4px; font-weight: 500; }
+  #splash-screen .desc { font-size: 13px; color: #DCE7FF; margin-top: 18px; max-width: 260px; line-height: 1.5; }
+  .splash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 320px; margin-top: 32px; }
+  .splash-card { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 16px; padding: 18px 14px; text-align: left; }
+  .splash-card .ic { font-size: 22px; }
+  .splash-card .t { font-weight: 700; font-size: 13px; margin-top: 8px; }
+  .splash-card .s { font-size: 11px; color: #D6E2FF; margin-top: 2px; line-height: 1.3; }
+  #splash-screen .get-started {
+    width: 100%; max-width: 320px; margin-top: 28px; padding: 14px; border: none; border-radius: 14px;
+    background: #fff; color: var(--brand-dark); font-weight: 700; font-size: 15px;
+  }
 
-  <script src="https://telegram.org/js/telegram-web-app.js?63"></script>
+  #gate-screen {
+    position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center;
+    padding: 24px; z-index: 200;
+  }
+  #gate-screen.hidden, #splash-screen.hidden { display: none; }
+  .login-box { width: 100%; max-width: 320px; background: var(--card); border-radius: 20px; padding: 28px 24px; box-shadow: 0 8px 24px rgba(17,24,39,0.08); }
+  .login-box .lock { width: 52px; height: 52px; border-radius: 16px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 14px; }
+  .login-box h2 { text-align: center; font-size: 18px; margin: 0 0 20px; }
+  .field-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+  .field-input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 12px;
+    margin-bottom: 14px; font-size: 14px; background: #FAFAFA;
+  }
+  .field-input:focus { outline: none; border-color: var(--brand); background: #fff; }
+  .primary-btn {
+    width: 100%; padding: 13px; background: var(--brand); color: #fff; border: none; border-radius: 12px;
+    font-weight: 700; font-size: 14px;
+  }
+  .primary-btn:active { background: var(--brand-dark); }
+  .primary-btn:disabled { opacity: 0.6; }
+  #gate-message { text-align: center; font-size: 12.5px; color: var(--danger); margin-top: 12px; min-height: 16px; }
 
-  <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+  #app-shell { display: none; flex-direction: column; height: 100vh; }
+  #app-shell.active { display: flex; }
+  .app-header { background: var(--brand); color: #fff; padding: 14px 16px 12px; flex-shrink: 0; }
+  .app-header .row { display: flex; align-items: center; justify-content: space-between; }
+  .app-header .brand-name { font-weight: 800; font-size: 16px; }
+  .app-header .brand-sub { font-size: 10.5px; color: #CBDCFF; margin-top: 1px; }
+  .app-header .who { font-size: 11px; background: rgba(255,255,255,0.18); padding: 5px 10px; border-radius: 100px; font-weight: 600; }
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f6f8;
-      color: #111827;
-    }
+  .tab-content { flex: 1; overflow-y: auto; padding: 14px 14px 90px; display: none; }
+  .tab-content.active { display: block; }
 
-    .app {
-      max-width: 600px;
-      margin: auto;
-      min-height: 100vh;
-      padding-bottom: 80px;
-    }
+  .search-bar { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; }
+  .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 14px; }
+  .search-bar .ic { color: var(--text-sub); font-size: 14px; }
 
-    .header {
-      background: #111827;
-      color: white;
-      padding: 18px 16px;
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
+  .filter-pills { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+  .filter-pill { flex-shrink: 0; padding: 7px 14px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--card); font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
+  .filter-pill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
 
-    .brand {
-      font-size: 23px;
-      font-weight: 800;
-    }
+  .add-btn-full { width: 100%; padding: 13px; background: var(--brand); color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
-    .tagline {
-      font-size: 12px;
-      opacity: .75;
-      margin-top: 3px;
-    }
+  .list-card { background: var(--card); border-radius: 14px; padding: 13px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(17,24,39,0.04); border: 1px solid var(--border); }
+  .avatar { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
+  .list-card .body { flex: 1; min-width: 0; }
+  .list-card .title { font-weight: 700; font-size: 14px; }
+  .list-card .sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .list-card .chev { color: #C4C9D2; font-size: 16px; }
+  .list-card .trailing { text-align: right; }
 
-    .user {
-      margin-top: 12px;
-      font-size: 13px;
-    }
+  .badge { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 100px; white-space: nowrap; }
+  .badge.pending { background: var(--warning-light); color: #B45309; }
+  .badge.confirmed { background: var(--success-light); color: #047857; }
+  .badge.cancelled { background: var(--danger-light); color: #B91C1C; }
 
-    .content {
-      padding: 15px;
-    }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-sub); }
+  .empty-state .ic { font-size: 34px; margin-bottom: 10px; }
+  .empty-state .t { font-weight: 700; font-size: 14px; color: var(--text); }
+  .empty-state .s { font-size: 12.5px; margin-top: 4px; }
 
-    .page {
-      display: none;
-    }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .stat-card { border-radius: 14px; padding: 14px 10px; text-align: center; }
+  .stat-card .num { font-size: 20px; font-weight: 800; }
+  .stat-card .lbl { font-size: 10.5px; font-weight: 600; margin-top: 3px; line-height: 1.25; }
+  .stat-card.green { background: var(--success); color: #fff; }
+  .stat-card.blue { background: var(--info); color: #fff; }
+  .stat-card.purple { background: var(--purple); color: #fff; }
+  .section-heading { font-size: 13px; font-weight: 700; color: var(--text-sub); margin: 0 0 10px; }
+  .date-nav { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; }
+  .date-nav button { background: none; border: none; font-size: 16px; color: var(--brand); font-weight: 700; padding: 4px 8px; }
+  .date-nav .date-label { font-weight: 700; font-size: 13.5px; }
 
-    .page.active {
-      display: block;
-    }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 50; }
+  .nav-btn { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; color: var(--text-sub); }
+  .nav-btn .ic { font-size: 19px; }
+  .nav-btn .lbl { font-size: 10px; font-weight: 600; }
+  .nav-btn.active { color: var(--brand); }
+  .fab { width: 46px; height: 46px; border-radius: 50%; background: var(--brand); color: #fff; border: none; font-size: 22px; display: flex; align-items: center; justify-content: center; margin: 0 4px; box-shadow: 0 4px 10px rgba(37,99,235,0.35); flex-shrink: 0; }
 
-    .card {
-      background: white;
-      border-radius: 14px;
-      padding: 15px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,.06);
-    }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.4); display: none; align-items: flex-end; z-index: 150; }
+  .modal-overlay.active { display: flex; }
+  .modal-sheet { background: var(--bg); width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; overflow-y: auto; animation: slideUp 0.22s ease-out; }
+  @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header { display: flex; align-items: center; gap: 10px; padding: 16px; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+  .modal-header .back { background: none; border: none; font-size: 20px; color: var(--brand); font-weight: 700; }
+  .modal-header h3 { margin: 0; font-size: 16px; }
+  .modal-body { padding: 16px; padding-bottom: 32px; }
 
-    .card-title {
-      font-size: 17px;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
+  .field-group { margin-bottom: 16px; }
+  .field-group-icon { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .field-group-icon .ic { width: 26px; height: 26px; border-radius: 8px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .field-group-icon label { font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
 
-    .stat {
-      font-size: 28px;
-      font-weight: 800;
-    }
+  .order-line { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .order-line .info { flex: 1; }
+  .order-line .del { background: var(--danger-light); color: var(--danger); border: none; border-radius: 8px; width: 28px; height: 28px; font-size: 14px; }
+  .order-line select, .order-line input { padding: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; }
 
-    .muted {
-      color: #6b7280;
-      font-size: 13px;
-    }
+  .totals-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 14px 0; }
+  .totals-box .row.total { display: flex; justify-content: space-between; font-weight: 800; font-size: 16px; }
 
-    .search {
-      width: 100%;
-      padding: 13px;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      font-size: 15px;
-      outline: none;
-    }
-
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px 15px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .primary {
-      background: #111827;
-      color: white;
-    }
-
-    .danger {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .item {
-      padding: 13px 0;
-      border-bottom: 1px solid #eee;
-    }
-
-    .item:last-child {
-      border-bottom: 0;
-    }
-
-    .item-name {
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .item-info {
-      font-size: 13px;
-      color: #6b7280;
-    }
-
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      border-top: 1px solid #ddd;
-      display: flex;
-      justify-content: center;
-      z-index: 30;
-    }
-
-    .nav-inner {
-      width: 100%;
-      max-width: 600px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    .nav-btn {
-      background: white;
-      border-radius: 0;
-      padding: 12px 4px;
-      color: #6b7280;
-      font-size: 11px;
-    }
-
-    .nav-btn.active {
-      color: #111827;
-      font-weight: 800;
-    }
-
-    .fab {
-      position: fixed;
-      right: 20px;
-      bottom: 75px;
-      width: 55px;
-      height: 55px;
-      border-radius: 50%;
-      background: #111827;
-      color: white;
-      font-size: 28px;
-      padding: 0;
-      z-index: 25;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 25px;
-      color: #6b7280;
-    }
-
-    .error {
-      background: #fee2e2;
-      color: #991b1b;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      font-size: 13px;
-    }
-
-    .success {
-      background: #dcfce7;
-      color: #166534;
-      padding: 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-      font-size: 13px;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-  </style>
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1F2937; color: #fff; padding: 10px 18px; border-radius: 100px; font-size: 12.5px; z-index: 400; opacity: 0; transition: opacity 0.2s; max-width: 85%; text-align: center; }
+  .toast.show { opacity: 1; }
+</style>
 </head>
-
 <body>
 
-<div class="app">
-
-  <header class="header">
-    <div class="brand">K-TRONiCS</div>
+  <div id="splash-screen">
+    <div class="logo">K-<span>TRONiCS</span></div>
     <div class="tagline">Empower Your Device</div>
-    <div class="user" id="userInfo">Connecting...</div>
-  </header>
+    <div class="desc">Business management for your daily customers, stock, and orders.</div>
+    <div class="splash-grid">
+      <div class="splash-card"><div class="ic">👥</div><div class="t">Customers</div><div class="s">Manage your customers</div></div>
+      <div class="splash-card"><div class="ic">📦</div><div class="t">Stock</div><div class="s">Check inventory & products</div></div>
+      <div class="splash-card"><div class="ic">🧾</div><div class="t">Orders</div><div class="s">Create & manage sales orders</div></div>
+      <div class="splash-card"><div class="ic">📊</div><div class="t">Today</div><div class="s">View daily sales report</div></div>
+    </div>
+    <button class="get-started" onclick="dismissSplash()">Get Started</button>
+  </div>
 
-  <main class="content">
+  <div id="gate-screen">
+    <div class="login-box">
+      <div class="lock">🔒</div>
+      <h2>K-TRONiCS Login</h2>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <label class="field-label">User ID</label>
+        <input type="text" id="login-userid" class="field-input" required autocomplete="username">
+        <label class="field-label">Password</label>
+        <input type="password" id="login-password" class="field-input" required autocomplete="current-password">
+        <button type="submit" id="login-btn" class="primary-btn">Log In</button>
+      </form>
+      <p id="gate-message"></p>
+    </div>
+  </div>
 
-    <!-- DASHBOARD / TODAY -->
-    <section id="todayPage" class="page active">
-
-      <div id="message"></div>
-
-      <div class="card">
-        <div class="card-title">Today's Sales</div>
-        <div class="stat" id="todaySales">$0.00</div>
-        <div class="muted">Total sales today</div>
+  <div id="app-shell">
+    <div class="app-header">
+      <div class="row">
+        <div>
+          <div class="brand-name">K-TRONiCS ERP</div>
+          <div class="brand-sub">mini app</div>
+        </div>
+        <div class="who" id="who-label"></div>
       </div>
-
-      <div class="card">
-        <div class="card-title">Orders</div>
-        <div class="stat" id="todayOrders">0</div>
-        <div class="muted">Today's orders</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Customers</div>
-        <div class="stat" id="customerCount">0</div>
-        <div class="muted">Customers assigned to you</div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Stock</div>
-        <div class="stat" id="stockCount">0</div>
-        <div class="muted">Products available</div>
-      </div>
-
-    </section>
-
-
-    <!-- CUSTOMERS -->
-    <section id="customersPage" class="page">
-
-      <input
-        id="customerSearch"
-        class="search"
-        placeholder="Search customers..."
-        oninput="filterCustomers()"
-      >
-
-      <div id="customersList">
-        <div class="loading">Loading customers...</div>
-      </div>
-
-    </section>
-
-
-    <!-- STOCK -->
-    <section id="stockPage" class="page">
-
-      <input
-        id="stockSearch"
-        class="search"
-        placeholder="Search products..."
-        oninput="filterStock()"
-      >
-
-      <div id="stockList">
-        <div class="loading">Loading stock...</div>
-      </div>
-
-    </section>
-
-
-    <!-- ORDERS -->
-    <section id="ordersPage" class="page">
-
-      <input
-        id="orderSearch"
-        class="search"
-        placeholder="Search orders..."
-        oninput="filterOrders()"
-      >
-
-      <div id="ordersList">
-        <div class="loading">Loading orders...</div>
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <button class="fab" onclick="newRecord()">+</button>
-
-
-  <nav class="bottom-nav">
-
-    <div class="nav-inner">
-
-      <button
-        class="nav-btn active"
-        onclick="showPage('todayPage', this)">
-        🏠<br>Today
-      </button>
-
-      <button
-        class="nav-btn"
-        onclick="showPage('customersPage', this)">
-        👥<br>Customers
-      </button>
-
-      <button
-        class="nav-btn"
-        onclick="showPage('stockPage', this)">
-        📦<br>Stock
-      </button>
-
-      <button
-        class="nav-btn"
-        onclick="showPage('ordersPage', this)">
-        🧾<br>Orders
-      </button>
-
     </div>
 
-  </nav>
+    <div class="tab-content active" id="tab-customers">
+      <div class="search-bar"><span class="ic">🔍</span><input type="text" id="cust-search" placeholder="Search customers..." oninput="renderCustomers()"></div>
+      <button class="add-btn-full" onclick="openCustomerModal()">➕ Add Customer</button>
+      <div id="customers-list"></div>
+    </div>
 
-</div>
+    <div class="tab-content" id="tab-stock">
+      <div class="search-bar"><span class="ic">🔍</span><input type="text" id="stock-search" placeholder="Search products..." oninput="renderStock()"></div>
+      <div class="filter-pills" id="stock-filter-pills"></div>
+      <div id="stock-list"></div>
+    </div>
 
+    <div class="tab-content" id="tab-orders">
+      <div class="search-bar"><span class="ic">🔍</span><input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()"></div>
+      <div class="filter-pills">
+        <button class="filter-pill active" data-status="ALL" onclick="setOrderFilter('ALL')">All</button>
+        <button class="filter-pill" data-status="Draft" onclick="setOrderFilter('Draft')">Draft</button>
+        <button class="filter-pill" data-status="Confirmed" onclick="setOrderFilter('Confirmed')">Confirmed</button>
+        <button class="filter-pill" data-status="Cancelled" onclick="setOrderFilter('Cancelled')">Cancelled</button>
+      </div>
+      <div id="orders-list"></div>
+    </div>
+
+    <div class="tab-content" id="tab-today">
+      <div class="date-nav">
+        <button onclick="shiftReportDate(-1)">‹</button>
+        <span class="date-label" id="report-date-label"></span>
+        <button onclick="shiftReportDate(1)">›</button>
+      </div>
+      <div id="report-content"></div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-btn active" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
+      <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Stock</span></button>
+      <button class="fab" onclick="handleFabClick()">➕</button>
+      <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
+      <button class="nav-btn" data-tab="today" onclick="switchTab('today')"><span class="ic">📊</span><span class="lbl">Today</span></button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="customer-modal">
+    <div class="modal-sheet">
+      <div class="modal-header"><button class="back" onclick="closeModal('customer-modal')">‹</button><h3>Add Customer</h3></div>
+      <div class="modal-body">
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">👤</span><label>Customer Name *</label></div>
+          <input type="text" id="new-cust-name" class="field-input" placeholder="Enter customer name">
+        </div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📞</span><label>Phone Number *</label></div>
+          <input type="text" id="new-cust-phone" class="field-input" placeholder="+855 12 345 678">
+        </div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📍</span><label>Address</label></div>
+          <input type="text" id="new-cust-address" class="field-input" placeholder="Enter address">
+        </div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📝</span><label>Notes</label></div>
+          <textarea id="new-cust-notes" class="field-input" rows="3" placeholder="Additional notes..."></textarea>
+        </div>
+        <button class="primary-btn" onclick="submitNewCustomer()">Save Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="order-modal">
+    <div class="modal-sheet">
+      <div class="modal-header"><button class="back" onclick="closeModal('order-modal')">‹</button><h3>New Order</h3></div>
+      <div class="modal-body">
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">👤</span><label>Customer *</label></div>
+          <select id="new-order-customer" class="field-input"></select>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <span class="field-label" style="margin:0;">Products</span>
+          <button onclick="addOrderItemRow()" style="background:var(--brand-light); color:var(--brand); border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700;">➕ Add Product</button>
+        </div>
+        <div id="order-items"></div>
+        <div class="totals-box"><div class="row total"><span>Total</span><span id="order-total">$0.00</span></div></div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📝</span><label>Notes (optional)</label></div>
+          <textarea id="new-order-notes" class="field-input" rows="2" placeholder="Add any notes..."></textarea>
+        </div>
+        <button class="primary-btn" onclick="submitNewOrder()">Save Order</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
 
 <script>
-
-  /*
-   * ============================================================
-   * K-TRONiCS TELEGRAM MINI APP
-   * ============================================================
-   *
-   * IMPORTANT:
-   * Replace the URL below with your deployed
-   * Google Apps Script Web App URL.
-   *
-   * Example:
-   * https://script.google.com/macros/s/XXXXXXXX/exec
-   */
-
-  const API_URL =
-    'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
-
-
-  const tg = window.Telegram.WebApp;
-
-  tg.ready();
-  tg.expand();
-
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzR3cNfKIHJ12Pxy_Q1vZFsgzjcmrtoD7WYzpJzt4TCk2oAxFlpUqOLrD2yTg-U929SaQ/exec';
+  const tg = window.Telegram ? window.Telegram.WebApp : null;
+  if (tg) { tg.ready(); tg.expand(); }
 
   let currentUser = null;
-  let customers = [];
-  let inventory = [];
-  let orders = [];
+  let currentUserEmail = '';
+  let customerCache = [];
+  let stockCache = [];
+  let ordersCache = [];
+  let orderMetaCache = { reps: [], customers: [], inventory: [] };
+  let stockCategoryFilter = 'ALL';
+  let orderStatusFilter = 'ALL';
+  let reportDateOffset = 0;
 
-
-  /*
-   * ------------------------------------------------------------
-   * API
-   * ------------------------------------------------------------
-   */
-
-  async function api(action, extra = {}) {
-
-    if (
-      !API_URL ||
-      API_URL.includes('PASTE_YOUR')
-    ) {
-      throw new Error(
-        'Please configure your Google Apps Script Web App URL.'
-      );
-    }
-
-    const body = {
-      action: action,
-      initData: tg.initData,
-      ...extra
-    };
-
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type':
-          'text/plain;charset=utf-8'
-      },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        'Server error: HTTP ' + response.status
-      );
-    }
-
-    const data = await response.json();
-
-    if (data.success === false) {
-      throw new Error(
-        data.error || 'Request failed'
-      );
-    }
-
-    return data;
+  const AVATAR_COLORS = ['#2563EB', '#8B5CF6', '#F59E0B', '#10B981', '#EF4444', '#0EA5E9', '#EC4899'];
+  function avatarColorFor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  }
+  function initialsFor(name) {
+    const parts = String(name || '?').trim().split(/\s+/);
+    return ((parts[0] || '?')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
   }
 
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2600);
+  }
 
-  /*
-   * ------------------------------------------------------------
-   * INITIALIZE
-   * ------------------------------------------------------------
-   */
+  function dismissSplash() { document.getElementById('splash-screen').classList.add('hidden'); }
 
-  async function initialize() {
+  function apiCall(action, extra) {
+    extra = extra || {};
+    const initData = tg ? tg.initData : '';
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action, initData, email: currentUserEmail }, extra))
+    }).then(r => r.json());
+  }
 
-    try {
+  function boot() {
+    if (!tg || !tg.initData) {
+      document.getElementById('gate-message').innerText = 'This app only works when opened from inside Telegram.';
+      document.getElementById('login-btn').disabled = true;
+    }
+  }
 
-      if (!tg.initData) {
-        showError(
-          'Please open this application from Telegram.'
-        );
+  function handleLogin(event) {
+    event.preventDefault();
+    const userId = document.getElementById('login-userid').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const msg = document.getElementById('gate-message');
+    btn.disabled = true; btn.innerText = 'Logging in...'; msg.innerText = '';
+
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'login', initData: tg ? tg.initData : '', email: userId, password: password })
+    }).then(r => r.json()).then(res => {
+      if (!res.authorized) {
+        msg.innerText = res.message || 'Login failed.';
+        btn.disabled = false; btn.innerText = 'Log In';
         return;
       }
-
-      const result =
-        await api('whoAmI');
-
-      currentUser =
-        result.user || result;
-
-      displayUser();
-
-      await Promise.all([
-        loadCustomers(),
-        loadInventory(),
-        loadOrders(),
-        loadDailyReport()
-      ]);
-
-    } catch (error) {
-
-      console.error(error);
-
-      showError(
-        error.message ||
-        'Unable to connect to K-TRONiCS ERP.'
-      );
-    }
+      currentUserEmail = userId;
+      currentUser = res;
+      document.getElementById('who-label').innerText = res.role === 'Admin' ? 'Admin' : res.salesRepName;
+      document.getElementById('gate-screen').classList.add('hidden');
+      document.getElementById('app-shell').classList.add('active');
+      loadCustomers();
+      loadStock();
+      loadOrders();
+      loadReport();
+    }).catch(err => {
+      msg.innerText = 'Connection error: ' + err.message;
+      btn.disabled = false; btn.innerText = 'Log In';
+    });
   }
 
-
-  /*
-   * ------------------------------------------------------------
-   * USER
-   * ------------------------------------------------------------
-   */
-
-  function displayUser() {
-
-    if (!currentUser) return;
-
-    const name =
-      currentUser.name ||
-      currentUser.fullName ||
-      currentUser.Sales_Rep_Name ||
-      currentUser.email ||
-      'User';
-
-    document.getElementById('userInfo')
-      .textContent =
-      '👤 ' + name;
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelector(`.nav-btn[data-tab="${tab}"]`).classList.add('active');
   }
 
-
-  /*
-   * ------------------------------------------------------------
-   * CUSTOMERS
-   * ------------------------------------------------------------
-   */
-
-  async function loadCustomers() {
-
-    const result =
-      await api('getCustomers');
-
-    customers =
-      result.customers ||
-      result.data ||
-      [];
-
-    renderCustomers();
-
-    document.getElementById(
-      'customerCount'
-    ).textContent =
-      customers.length;
+  function handleFabClick() {
+    const activeTab = document.querySelector('.nav-btn.active').dataset.tab;
+    if (activeTab === 'customers') openCustomerModal();
+    else if (activeTab === 'orders') openOrderModal();
+    else showToast(activeTab === 'stock' ? 'Stock is view-only here.' : 'This is a summary, nothing to add here.');
   }
 
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-  function renderCustomers(list = customers) {
+  function loadCustomers() {
+    apiCall('getCustomers').then(res => {
+      if (!res.success) return showToast(res.message);
+      customerCache = res.data.rows;
+      renderCustomers();
+    });
+  }
 
-    const container =
-      document.getElementById(
-        'customersList'
-      );
+  function renderCustomers() {
+    const q = document.getElementById('cust-search').value.trim().toLowerCase();
+    const list = document.getElementById('customers-list');
+    const filtered = customerCache.filter(c => !q ||
+      String(c.Customer_Name || '').toLowerCase().includes(q) ||
+      String(c.Contact_No || '').toLowerCase().includes(q));
 
-    if (!list.length) {
-
-      container.innerHTML =
-        '<div class="card">' +
-        'No customers found.' +
-        '</div>';
-
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="ic">👥</div><div class="t">No customers yet</div><div class="s">Tap "Add Customer" to create your first one</div></div>`;
       return;
     }
-
-    container.innerHTML =
-      list.map(customer => {
-
-        const name =
-          customer.Customer_Name ||
-          customer.customerName ||
-          'Unnamed Customer';
-
-        const phone =
-          customer.Contact_No ||
-          customer.phone ||
-          '';
-
-        const location =
-          customer.Location ||
-          customer.location ||
-          '';
-
-        return `
-          <div class="card item">
-
-            <div class="item-name">
-              ${escapeHtml(name)}
-            </div>
-
-            <div class="item-info">
-              ${escapeHtml(phone)}
-            </div>
-
-            <div class="item-info">
-              ${escapeHtml(location)}
-            </div>
-
-          </div>
-        `;
-
-      }).join('');
+    list.innerHTML = filtered.map(c => {
+      const name = c.Customer_Name || 'Unnamed';
+      return `
+      <div class="list-card">
+        <div class="avatar" style="background:${avatarColorFor(name)}">${initialsFor(name)}</div>
+        <div class="body">
+          <div class="title">${name}</div>
+          <div class="sub">${c.Contact_No || 'No phone number'}</div>
+        </div>
+        <span class="chev">›</span>
+      </div>`;
+    }).join('');
   }
 
-
-  function filterCustomers() {
-
-    const q =
-      document.getElementById(
-        'customerSearch'
-      ).value
-      .toLowerCase();
-
-    const filtered =
-      customers.filter(c => {
-
-        const text =
-          JSON.stringify(c)
-            .toLowerCase();
-
-        return text.includes(q);
-      });
-
-    renderCustomers(filtered);
+  function openCustomerModal() {
+    document.getElementById('new-cust-name').value = '';
+    document.getElementById('new-cust-phone').value = '';
+    document.getElementById('new-cust-address').value = '';
+    document.getElementById('new-cust-notes').value = '';
+    document.getElementById('customer-modal').classList.add('active');
   }
 
-
-  /*
-   * ------------------------------------------------------------
-   * INVENTORY
-   * ------------------------------------------------------------
-   */
-
-  async function loadInventory() {
-
-    const result =
-      await api('getInventory');
-
-    inventory =
-      result.inventory ||
-      result.data ||
-      [];
-
-    renderInventory();
-
-    document.getElementById(
-      'stockCount'
-    ).textContent =
-      inventory.length;
+  function submitNewCustomer() {
+    const name = document.getElementById('new-cust-name').value.trim();
+    const phone = document.getElementById('new-cust-phone').value.trim();
+    if (!name || !phone) return showToast('Name and phone number are required.');
+    apiCall('saveCustomer', { payload: { Customer_Name: name, Contact_No: phone, Address: document.getElementById('new-cust-address').value.trim(), Notes: document.getElementById('new-cust-notes').value.trim() } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast('Customer saved!');
+      closeModal('customer-modal');
+      loadCustomers();
+    });
   }
 
+  function loadStock() {
+    apiCall('getMyRepStock').then(res => {
+      if (!res.success) return showToast(res.message);
+      stockCache = res.items;
+      renderStockFilterPills();
+      renderStock();
+    });
+  }
 
-  function renderInventory(list = inventory) {
+  function renderStockFilterPills() {
+    const cats = Array.from(new Set(stockCache.map(i => i.Category).filter(Boolean)));
+    const pills = document.getElementById('stock-filter-pills');
+    pills.innerHTML = `<button class="filter-pill ${stockCategoryFilter === 'ALL' ? 'active' : ''}" onclick="setStockFilter('ALL')">All</button>` +
+      cats.map(c => `<button class="filter-pill ${stockCategoryFilter === c ? 'active' : ''}" onclick="setStockFilter('${c.replace(/'/g, "\\'")}')">${c}</button>`).join('');
+  }
 
-    const container =
-      document.getElementById(
-        'stockList'
-      );
+  function setStockFilter(cat) { stockCategoryFilter = cat; renderStockFilterPills(); renderStock(); }
 
-    if (!list.length) {
+  function renderStock() {
+    const q = document.getElementById('stock-search').value.trim().toLowerCase();
+    const list = document.getElementById('stock-list');
+    const filtered = stockCache.filter(i =>
+      (stockCategoryFilter === 'ALL' || i.Category === stockCategoryFilter) &&
+      (!q || String(i.Product_Name || '').toLowerCase().includes(q) || String(i.SKU || '').toLowerCase().includes(q)));
 
-      container.innerHTML =
-        '<div class="card">' +
-        'No inventory found.' +
-        '</div>';
-
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="ic">📦</div><div class="t">No stock allocated to you</div><div class="s">Ask your admin to transfer some stock to you</div></div>`;
       return;
     }
-
-    container.innerHTML =
-      list.map(product => {
-
-        const sku =
-          product.SKU || '';
-
-        const name =
-          product.Product_Name ||
-          product.Products_Name ||
-          'Product';
-
-        const stock =
-          product.Total_Available_Stock ??
-          product.Main_Stock ??
-          0;
-
-        const category =
-          product.Category || '';
-
-        let status =
-          'Available';
-
-        if (Number(stock) <= 0) {
-          status = 'Out of stock';
-        } else if (
-          Number(stock) <=
-          Number(product.Reorder_Level || 0)
-        ) {
-          status = 'Low stock';
-        }
-
-        return `
-          <div class="card item">
-
-            <div class="item-name">
-              ${escapeHtml(name)}
-            </div>
-
-            <div class="item-info">
-              SKU: ${escapeHtml(sku)}
-            </div>
-
-            <div class="item-info">
-              Category:
-              ${escapeHtml(category)}
-            </div>
-
-            <div class="item-info">
-              Stock: <strong>${stock}</strong>
-              · ${status}
-            </div>
-
-          </div>
-        `;
-
-      }).join('');
+    list.innerHTML = filtered.map(i => `
+      <div class="list-card">
+        <div class="avatar" style="background:#EEF2FF; color:var(--brand); font-size:18px;">📦</div>
+        <div class="body">
+          <div class="title">${i.Product_Name}</div>
+          <div class="sub">Stock: ${i.MyStock} · $${Number(i.Unit_Price).toFixed(2)}</div>
+        </div>
+        <span class="chev">›</span>
+      </div>`).join('');
   }
 
-
-  function filterStock() {
-
-    const q =
-      document.getElementById(
-        'stockSearch'
-      ).value
-      .toLowerCase();
-
-    const filtered =
-      inventory.filter(p => {
-
-        return JSON.stringify(p)
-          .toLowerCase()
-          .includes(q);
-
-      });
-
-    renderInventory(filtered);
+  function loadOrders() {
+    apiCall('getSalesOrders').then(res => {
+      if (!res.success) return showToast(res.message);
+      ordersCache = groupOrdersBySO(res.data.rows);
+      renderOrders();
+    });
   }
 
+  function groupOrdersBySO(rows) {
+    const grouped = {};
+    rows.forEach(r => {
+      const so = r.SO_Number;
+      if (!grouped[so]) grouped[so] = { SO_Number: so, Order_Date: r.Order_Date, Customer_Name: r.Customer_Name, Order_Status: r.Order_Status, Total: 0 };
+      grouped[so].Total += Number(r.Total_Amount) || 0;
+    });
+    return Object.values(grouped).sort((a, b) => String(b.Order_Date).localeCompare(String(a.Order_Date)));
+  }
 
-  /*
-   * ------------------------------------------------------------
-   * ORDERS
-   * ------------------------------------------------------------
-   */
-
-  async function loadOrders() {
-
-    const result =
-      await api('getSalesOrders');
-
-    orders =
-      result.orders ||
-      result.data ||
-      [];
-
+  function setOrderFilter(status) {
+    orderStatusFilter = status;
+    document.querySelectorAll('#tab-orders .filter-pill').forEach(p => p.classList.toggle('active', p.dataset.status === status));
     renderOrders();
   }
 
+  function renderOrders() {
+    const q = document.getElementById('orders-search').value.trim().toLowerCase();
+    const list = document.getElementById('orders-list');
+    const filtered = ordersCache.filter(o =>
+      (orderStatusFilter === 'ALL' || o.Order_Status === orderStatusFilter) &&
+      (!q || String(o.Customer_Name || '').toLowerCase().includes(q) || String(o.SO_Number || '').toLowerCase().includes(q)));
 
-  function renderOrders(list = orders) {
-
-    const container =
-      document.getElementById(
-        'ordersList'
-      );
-
-    if (!list.length) {
-
-      container.innerHTML =
-        '<div class="card">' +
-        'No orders found.' +
-        '</div>';
-
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="ic">🧾</div><div class="t">No orders found</div><div class="s">Tap the + button to create one</div></div>`;
       return;
     }
-
-    container.innerHTML =
-      list.map(order => {
-
-        const number =
-          order.SO_Number ||
-          order.soNumber ||
-          '';
-
-        const customer =
-          order.Customer_Name ||
-          '';
-
-        const amount =
-          order.Total_Amount ??
-          0;
-
-        const payment =
-          order.Payment_Status ||
-          '';
-
-        const status =
-          order.Order_Status ||
-          '';
-
-        return `
-          <div class="card item">
-
-            <div class="item-name">
-              ${escapeHtml(number)}
-            </div>
-
-            <div class="item-info">
-              Customer:
-              ${escapeHtml(customer)}
-            </div>
-
-            <div class="item-info">
-              Amount:
-              ${formatMoney(amount)}
-            </div>
-
-            <div class="item-info">
-              Payment:
-              ${escapeHtml(payment)}
-            </div>
-
-            <div class="item-info">
-              Status:
-              ${escapeHtml(status)}
-            </div>
-
-          </div>
-        `;
-
-      }).join('');
+    list.innerHTML = filtered.map(o => {
+      const badgeClass = o.Order_Status === 'Confirmed' ? 'confirmed' : (o.Order_Status === 'Cancelled' ? 'cancelled' : 'pending');
+      return `
+      <div class="list-card">
+        <div class="body">
+          <div class="title" style="display:flex; justify-content:space-between; align-items:center;"><span>${o.SO_Number}</span><span class="badge ${badgeClass}">${o.Order_Status}</span></div>
+          <div class="sub">${o.Customer_Name} · ${o.Order_Date}</div>
+        </div>
+        <div class="trailing"><div class="title">$${o.Total.toFixed(2)}</div></div>
+      </div>`;
+    }).join('');
   }
 
-
-  function filterOrders() {
-
-    const q =
-      document.getElementById(
-        'orderSearch'
-      ).value
-      .toLowerCase();
-
-    const filtered =
-      orders.filter(o => {
-
-        return JSON.stringify(o)
-          .toLowerCase()
-          .includes(q);
-
-      });
-
-    renderOrders(filtered);
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * DAILY REPORT
-   * ------------------------------------------------------------
-   */
-
-  async function loadDailyReport() {
-
-    try {
-
-      const result =
-        await api('getDailyReport');
-
-      const report =
-        result.report ||
-        result.data ||
-        result;
-
-      document.getElementById(
-        'todaySales'
-      ).textContent =
-        formatMoney(
-          report.totalSales ||
-          report.Total_Sales ||
-          0
-        );
-
-      document.getElementById(
-        'todayOrders'
-      ).textContent =
-        report.totalOrders ||
-        report.Total_Orders ||
-        0;
-
-    } catch (error) {
-
-      console.warn(
-        'Daily report:',
-        error
-      );
-    }
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * NAVIGATION
-   * ------------------------------------------------------------
-   */
-
-  function showPage(pageId, button) {
-
-    document
-      .querySelectorAll('.page')
-      .forEach(page => {
-        page.classList.remove('active');
-      });
-
-    document
-      .getElementById(pageId)
-      .classList.add('active');
-
-    document
-      .querySelectorAll('.nav-btn')
-      .forEach(btn => {
-        btn.classList.remove('active');
-      });
-
-    button.classList.add('active');
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+  function openOrderModal() {
+    apiCall('getSalesOrderMetaData').then(res => {
+      if (!res.success) return showToast('Could not load order data.');
+      orderMetaCache = res.data;
+      const custSelect = document.getElementById('new-order-customer');
+      custSelect.innerHTML = '<option value="">Select customer...</option>' + orderMetaCache.customers.map(c => `<option value="${c.Customer_Name}">${c.Customer_Name}</option>`).join('');
+      document.getElementById('order-items').innerHTML = '';
+      document.getElementById('new-order-notes').value = '';
+      addOrderItemRow();
+      updateOrderTotal();
+      document.getElementById('order-modal').classList.add('active');
     });
   }
 
-
-  /*
-   * ------------------------------------------------------------
-   * NEW RECORD
-   * ------------------------------------------------------------
-   */
-
-  function newRecord() {
-
-    const active =
-      document.querySelector(
-        '.page.active'
-      );
-
-    if (!active) return;
-
-    if (
-      active.id ===
-      'customersPage'
-    ) {
-
-      alert(
-        'Customer creation form will be connected to saveCustomer.'
-      );
-
-    } else if (
-      active.id ===
-      'ordersPage'
-    ) {
-
-      alert(
-        'Sales order creation form will be connected to saveSalesOrder.'
-      );
-
-    } else {
-
-      alert(
-        'Select Customers or Orders first.'
-      );
-    }
-  }
-
-
-  /*
-   * ------------------------------------------------------------
-   * HELPERS
-   * ------------------------------------------------------------
-   */
-
-  function formatMoney(value) {
-
-    const number =
-      Number(value) || 0;
-
-    return number.toLocaleString(
-      'en-US',
-      {
-        style: 'currency',
-        currency: 'USD'
-      }
-    );
-  }
-
-
-  function escapeHtml(value) {
-
-    return String(
-      value ?? ''
-    )
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-
-
-  function showError(message) {
-
-    document.getElementById(
-      'message'
-    ).innerHTML = `
-      <div class="error">
-        ${escapeHtml(message)}
+  function addOrderItemRow() {
+    const container = document.getElementById('order-items');
+    const row = document.createElement('div');
+    row.className = 'order-line';
+    const options = orderMetaCache.inventory.map(inv => {
+      const myColumn = 'Rep_Stock_' + (currentUser.salesRepName || '');
+      const avail = Number(inv[myColumn]) || 0;
+      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 ? 'disabled' : ''}>${inv.Product_Name} (${avail} yours)</option>`;
+    }).join('');
+    row.innerHTML = `
+      <div class="info">
+        <select class="order-sku" style="width:100%; margin-bottom:6px;" onchange="onOrderProductChange(this)"><option value="">Select product...</option>${options}</select>
+        <div style="display:flex; gap:6px;">
+          <input type="number" class="order-qty" min="1" value="1" style="width:60px;" oninput="updateOrderTotal()">
+          <input type="number" class="order-price" step="0.01" value="0" style="width:80px;" oninput="updateOrderTotal()">
+        </div>
       </div>
+      <button class="del" onclick="this.closest('.order-line').remove(); updateOrderTotal();">✕</button>`;
+    container.appendChild(row);
+  }
+
+  function onOrderProductChange(select) {
+    const opt = select.options[select.selectedIndex];
+    const row = select.closest('.order-line');
+    row.querySelector('.order-price').value = opt.getAttribute('data-price') || 0;
+    const available = Number(opt.getAttribute('data-available')) || 0;
+    row.querySelector('.order-qty').max = available;
+    updateOrderTotal();
+  }
+
+  function updateOrderTotal() {
+    let total = 0;
+    document.querySelectorAll('.order-line').forEach(row => {
+      const qty = Number(row.querySelector('.order-qty').value) || 0;
+      const price = Number(row.querySelector('.order-price').value) || 0;
+      total += qty * price;
+    });
+    document.getElementById('order-total').innerText = '$' + total.toFixed(2);
+  }
+
+  function submitNewOrder() {
+    const customer = document.getElementById('new-order-customer').value;
+    if (!customer) return showToast('Please select a customer.');
+    const items = [];
+    document.querySelectorAll('.order-line').forEach(row => {
+      const select = row.querySelector('.order-sku');
+      const sku = select.value;
+      const productName = select.options[select.selectedIndex].text;
+      const qty = Number(row.querySelector('.order-qty').value);
+      const price = Number(row.querySelector('.order-price').value);
+      if (sku && qty > 0) items.push({ sku, product_name: productName, qty, price });
+    });
+    if (items.length === 0) return showToast('Add at least one product.');
+
+    apiCall('saveSalesOrder', { payload: { Customer_Name: customer, Order_Status: 'Confirmed', Paid_Amount: 0, items } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast('Order saved!');
+      closeModal('order-modal');
+      loadOrders();
+      loadStock();
+      loadReport();
+    });
+  }
+
+  function shiftReportDate(delta) { reportDateOffset += delta; loadReport(); }
+
+  function loadReport() {
+    const d = new Date();
+    d.setDate(d.getDate() + reportDateOffset);
+    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    document.getElementById('report-date-label').innerText = dateStr;
+
+    const content = document.getElementById('report-content');
+    content.innerHTML = `<div class="empty-state"><div class="ic">⏳</div><div class="s">Loading...</div></div>`;
+    apiCall('getDailyReport', { date: dateStr }).then(res => {
+      if (!res.success) { content.innerHTML = `<div class="empty-state"><div class="ic">⚠️</div><div class="t">Couldn't load report</div></div>`; return; }
+      renderReport(res);
+    });
+  }
+
+  function renderReport(r) {
+    const content = document.getElementById('report-content');
+    content.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card green"><div class="num">${r.orderCount}</div><div class="lbl">Total Orders</div></div>
+        <div class="stat-card blue"><div class="num">$${r.totalRevenue}</div><div class="lbl">Total Sales</div></div>
+        <div class="stat-card purple"><div class="num">${r.customers.length}</div><div class="lbl">Customers</div></div>
+      </div>
+      <div class="section-heading">Customers Sold To</div>
+      ${r.customers.length === 0
+        ? `<div class="empty-state"><div class="ic">📊</div><div class="t">No confirmed orders yet</div></div>`
+        : r.customers.map(c => `<div class="list-card"><div class="body"><div class="title">${c}</div></div></div>`).join('')}
     `;
   }
 
-
-  /*
-   * ------------------------------------------------------------
-   * START
-   * ------------------------------------------------------------
-   */
-
-  initialize();
-
+  boot();
 </script>
-
 </body>
 </html>
