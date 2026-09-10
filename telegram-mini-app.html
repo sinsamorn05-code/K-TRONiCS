@@ -198,7 +198,10 @@
           <div class="brand-name">K-TRONiCS ERP</div>
           <div class="brand-sub">mini app</div>
         </div>
-        <div class="who" id="who-label"></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div class="who" id="who-label"></div>
+          <button onclick="handleLogout()" style="background:rgba(255,255,255,0.18); border:none; color:#fff; font-size:14px; width:28px; height:28px; border-radius:8px;" title="Log out">⎋</button>
+        </div>
       </div>
     </div>
 
@@ -342,16 +345,26 @@
     if (!tg || !tg.initData) {
       document.getElementById('gate-message').innerText = 'This app only works when opened from inside Telegram.';
       document.getElementById('login-btn').disabled = true;
+      return;
+    }
+    // If there's a remembered login from before, try it automatically
+    // instead of showing the form -- still re-validated against the
+    // backend (not just trusted blindly), so a password the admin later
+    // changed correctly falls back to asking again.
+    const saved = localStorage.getItem('ktronics_login');
+    if (saved) {
+      try {
+        const { userId, password } = JSON.parse(saved);
+        document.getElementById('gate-message').innerText = 'Logging you back in...';
+        document.getElementById('login-btn').disabled = true;
+        performLogin(userId, password, true);
+      } catch (e) { localStorage.removeItem('ktronics_login'); }
     }
   }
 
-  function handleLogin(event) {
-    event.preventDefault();
-    const userId = document.getElementById('login-userid').value.trim();
-    const password = document.getElementById('login-password').value;
+  function performLogin(userId, password, isAutoLogin) {
     const btn = document.getElementById('login-btn');
     const msg = document.getElementById('gate-message');
-    btn.disabled = true; btn.innerText = 'Logging in...'; msg.innerText = '';
 
     fetch(API_URL, {
       method: 'POST',
@@ -359,10 +372,16 @@
       body: JSON.stringify({ action: 'login', initData: tg ? tg.initData : '', email: userId, password: password })
     }).then(r => r.json()).then(res => {
       if (!res.authorized) {
-        msg.innerText = res.message || 'Login failed.';
+        localStorage.removeItem('ktronics_login'); // stale/invalid remembered login -- clear it
+        msg.innerText = isAutoLogin ? '' : (res.message || 'Login failed.');
         btn.disabled = false; btn.innerText = 'Log In';
         return;
       }
+      // Remembers the login across closing/reopening the app -- this is
+      // real persistent browser storage in Telegram's own webview, not the
+      // in-memory-only state a plain JS variable would lose the moment the
+      // app closes.
+      localStorage.setItem('ktronics_login', JSON.stringify({ userId, password }));
       currentUserEmail = userId;
       currentUser = res;
       document.getElementById('who-label').innerText = res.role === 'Admin' ? 'Admin' : res.salesRepName;
@@ -373,9 +392,33 @@
       loadOrders();
       loadReport();
     }).catch(err => {
-      msg.innerText = 'Connection error: ' + err.message;
+      msg.innerText = isAutoLogin ? '' : ('Connection error: ' + err.message);
       btn.disabled = false; btn.innerText = 'Log In';
     });
+  }
+
+  function handleLogin(event) {
+    event.preventDefault();
+    const userId = document.getElementById('login-userid').value.trim();
+    const password = document.getElementById('login-password').value;
+    document.getElementById('login-btn').disabled = true;
+    document.getElementById('login-btn').innerText = 'Logging in...';
+    document.getElementById('gate-message').innerText = '';
+    performLogin(userId, password, false);
+  }
+
+  function handleLogout() {
+    if (!confirm('Log out?')) return;
+    localStorage.removeItem('ktronics_login');
+    currentUserEmail = '';
+    currentUser = null;
+    document.getElementById('app-shell').classList.remove('active');
+    document.getElementById('gate-screen').classList.remove('hidden');
+    document.getElementById('login-userid').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-btn').disabled = false;
+    document.getElementById('login-btn').innerText = 'Log In';
+    document.getElementById('gate-message').innerText = '';
   }
 
   function switchTab(tab) {
