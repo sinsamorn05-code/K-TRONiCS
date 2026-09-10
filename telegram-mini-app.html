@@ -2,289 +2,345 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>K-TRONiCS ERP</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --tg-blue: #2AABEE;
-    --tg-blue-dark: #1E96D6;
-    --ink: #17212B;
-    --ink-soft: #6B7A8D;
-    --line: #E4E9EE;
-    --bg: #F4F7FA;
+    --brand: #2563EB;
+    --brand-dark: #1D4ED8;
+    --brand-light: #EFF4FF;
+    --success: #10B981;
+    --success-light: #ECFDF5;
+    --info: #3B82F6;
+    --purple: #8B5CF6;
+    --warning: #F59E0B;
+    --warning-light: #FFFBEB;
+    --danger: #EF4444;
+    --danger-light: #FEF2F2;
+    --bg: #F3F4F6;
     --card: #FFFFFF;
-    --danger: #E0555A;
-    --success: #33A85A;
-    --warn: #E0A426;
+    --text: #111827;
+    --text-sub: #6B7280;
+    --border: #E5E7EB;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    margin: 0; background: var(--bg); color: var(--ink);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    padding-bottom: 78px;
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    overscroll-behavior-y: contain;
   }
-  header {
-    position: sticky; top: 0; z-index: 20; background: var(--card);
-    border-bottom: 1px solid var(--line); padding: 14px 16px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  header h1 { font-size: 16px; font-weight: 700; margin: 0; }
-  header .who { font-size: 11px; color: var(--ink-soft); }
-  #screens { padding: 12px; }
-  .screen { display: none; }
-  .screen.active { display: block; }
+  input, textarea, select, button { font-family: inherit; font-size: 14px; }
+  button { cursor: pointer; }
 
-  .search-bar {
-    display: flex; gap: 8px; margin-bottom: 10px;
+  #splash-screen {
+    position: fixed; inset: 0; background: linear-gradient(180deg, #1E3A8A 0%, var(--brand) 55%, #3B82F6 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px 24px; z-index: 300; color: #fff; text-align: center;
   }
-  .search-bar input, .search-bar select {
-    flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
-    font-size: 14px; background: var(--card);
+  #splash-screen .logo { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; }
+  #splash-screen .logo span { color: #BFD4FF; }
+  #splash-screen .tagline { font-size: 13px; color: #C7D9FF; margin-top: 4px; font-weight: 500; }
+  #splash-screen .desc { font-size: 13px; color: #DCE7FF; margin-top: 18px; max-width: 260px; line-height: 1.5; }
+  .splash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 320px; margin-top: 32px; }
+  .splash-card { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 16px; padding: 18px 14px; text-align: left; }
+  .splash-card .ic { font-size: 22px; }
+  .splash-card .t { font-weight: 700; font-size: 13px; margin-top: 8px; }
+  .splash-card .s { font-size: 11px; color: #D6E2FF; margin-top: 2px; line-height: 1.3; }
+  #splash-screen .get-started {
+    width: 100%; max-width: 320px; margin-top: 28px; padding: 14px; border: none; border-radius: 14px;
+    background: #fff; color: var(--brand-dark); font-weight: 700; font-size: 15px;
   }
-
-  .card {
-    background: var(--card); border-radius: 14px; padding: 14px;
-    margin-bottom: 10px; border: 1px solid var(--line);
-  }
-  .card .row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-  .card .name { font-weight: 700; font-size: 15px; }
-  .card .meta { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
-  .badge {
-    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
-    white-space: nowrap;
-  }
-  .badge.ok { background: #E7F6EC; color: var(--success); }
-  .badge.warn { background: #FCF2DC; color: var(--warn); }
-  .badge.danger { background: #FBE9EA; color: var(--danger); }
-  .badge.neutral { background: #EEF1F4; color: var(--ink-soft); }
-
-  .empty-state {
-    text-align: center; padding: 48px 20px; color: var(--ink-soft);
-  }
-  .empty-state .icon { font-size: 34px; margin-bottom: 8px; }
-  .empty-state .title { font-weight: 700; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
-  .empty-state .sub { font-size: 13px; }
-
-  .fab {
-    position: fixed; right: 16px; bottom: 92px; z-index: 30;
-    background: var(--tg-blue); color: white; border: none; border-radius: 999px;
-    width: 52px; height: 52px; font-size: 24px; box-shadow: 0 4px 14px rgba(42,171,238,0.4);
-  }
-
-  nav.tabs {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 20;
-    background: var(--card); border-top: 1px solid var(--line);
-    display: flex; padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
-  }
-  nav.tabs button {
-    flex: 1; background: none; border: none; padding: 8px 4px; border-radius: 10px;
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    color: var(--ink-soft); font-size: 10px; font-weight: 600;
-  }
-  nav.tabs button .ic { font-size: 20px; }
-  nav.tabs button.active { color: var(--tg-blue); }
-  nav.tabs button.active .ic { transform: scale(1.05); }
-
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; z-index: 50;
-    background: rgba(23,33,43,0.5);
-  }
-  .modal-overlay.active { display: flex; align-items: flex-end; }
-  .modal-sheet {
-    background: var(--card); width: 100%; max-height: 88vh; overflow-y: auto;
-    border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom, 0px));
-  }
-  .modal-sheet h2 { font-size: 16px; margin: 0 0 14px; }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-soft); margin-bottom: 5px; }
-  .field input, .field select, .field textarea {
-    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px;
-    font-size: 15px; background: #FAFBFC;
-  }
-  .field-row { display: flex; gap: 10px; }
-  .field-row .field { flex: 1; }
-
-  .order-item-row {
-    display: flex; gap: 8px; align-items: center; margin-bottom: 8px;
-  }
-  .order-item-row select { flex: 2.2; }
-  .order-item-row input { flex: 0.8; text-align: center; }
-  .order-item-row .rm { background: none; border: none; color: var(--danger); font-size: 18px; padding: 4px 8px; }
-  .add-item-btn {
-    width: 100%; padding: 10px; border: 1.5px dashed var(--line); background: none;
-    border-radius: 10px; color: var(--tg-blue); font-weight: 600; font-size: 13px;
-  }
-  .order-total {
-    display: flex; justify-content: space-between; padding: 12px 4px 4px;
-    font-weight: 700; font-size: 16px; border-top: 1px solid var(--line); margin-top: 10px;
-  }
-  .primary-btn {
-    width: 100%; padding: 13px; background: var(--tg-blue); color: white; border: none;
-    border-radius: 12px; font-weight: 700; font-size: 15px; margin-top: 14px;
-  }
-  .primary-btn:disabled { opacity: 0.5; }
-
-  #toast {
-    position: fixed; bottom: 90px; left: 16px; right: 16px; z-index: 60;
-    background: var(--ink); color: white; padding: 12px 16px; border-radius: 12px;
-    font-size: 13px; text-align: center; opacity: 0; pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  #toast.show { opacity: 1; }
 
   #gate-screen {
-    position: fixed; inset: 0; z-index: 100; background: var(--bg);
-    display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center;
+    position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center;
+    padding: 24px; z-index: 200;
   }
-  #gate-screen .box { max-width: 320px; }
-  #gate-screen .icon { font-size: 40px; margin-bottom: 12px; }
-  #gate-screen h2 { font-size: 17px; margin: 0 0 8px; }
-  #gate-screen p { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  #gate-screen.hidden, #splash-screen.hidden { display: none; }
+  .login-box { width: 100%; max-width: 320px; background: var(--card); border-radius: 20px; padding: 28px 24px; box-shadow: 0 8px 24px rgba(17,24,39,0.08); }
+  .login-box .lock { width: 52px; height: 52px; border-radius: 16px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 14px; }
+  .login-box h2 { text-align: center; font-size: 18px; margin: 0 0 20px; }
+  .field-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+  .field-input {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 12px;
+    margin-bottom: 14px; font-size: 14px; background: #FAFAFA;
+  }
+  .field-input:focus { outline: none; border-color: var(--brand); background: #fff; }
+  .primary-btn {
+    width: 100%; padding: 13px; background: var(--brand); color: #fff; border: none; border-radius: 12px;
+    font-weight: 700; font-size: 14px;
+  }
+  .primary-btn:active { background: var(--brand-dark); }
+  .primary-btn:disabled { opacity: 0.6; }
+  #gate-message { text-align: center; font-size: 12.5px; color: var(--danger); margin-top: 12px; min-height: 16px; }
+
+  #app-shell { display: none; flex-direction: column; height: 100vh; }
+  #app-shell.active { display: flex; }
+  .app-header { background: var(--brand); color: #fff; padding: 14px 16px 12px; flex-shrink: 0; }
+  .app-header .row { display: flex; align-items: center; justify-content: space-between; }
+  .app-header .brand-name { font-weight: 800; font-size: 16px; }
+  .app-header .brand-sub { font-size: 10.5px; color: #CBDCFF; margin-top: 1px; }
+  .app-header .who { font-size: 11px; background: rgba(255,255,255,0.18); padding: 5px 10px; border-radius: 100px; font-weight: 600; }
+
+  .tab-content { flex: 1; overflow-y: auto; padding: 14px 14px 90px; display: none; }
+  .tab-content.active { display: block; }
+
+  .search-bar { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 12px; }
+  .search-bar input { flex: 1; border: none; background: transparent; outline: none; font-size: 14px; }
+  .search-bar .ic { color: var(--text-sub); font-size: 14px; }
+
+  .filter-pills { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+  .filter-pill { flex-shrink: 0; padding: 7px 14px; border-radius: 100px; border: 1.5px solid var(--border); background: var(--card); font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
+  .filter-pill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+  .add-btn-full { width: 100%; padding: 13px; background: var(--brand); color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+  .list-card { background: var(--card); border-radius: 14px; padding: 13px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 3px rgba(17,24,39,0.04); border: 1px solid var(--border); }
+  .avatar { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; flex-shrink: 0; }
+  .list-card .body { flex: 1; min-width: 0; }
+  .list-card .title { font-weight: 700; font-size: 14px; }
+  .list-card .sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .list-card .chev { color: #C4C9D2; font-size: 16px; }
+  .list-card .trailing { text-align: right; }
+
+  .badge { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 100px; white-space: nowrap; }
+  .badge.pending { background: var(--warning-light); color: #B45309; }
+  .badge.confirmed { background: var(--success-light); color: #047857; }
+  .badge.cancelled { background: var(--danger-light); color: #B91C1C; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-sub); }
+  .empty-state .ic { font-size: 34px; margin-bottom: 10px; }
+  .empty-state .t { font-weight: 700; font-size: 14px; color: var(--text); }
+  .empty-state .s { font-size: 12.5px; margin-top: 4px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .stat-card { border-radius: 14px; padding: 14px 10px; text-align: center; }
+  .stat-card .num { font-size: 20px; font-weight: 800; }
+  .stat-card .lbl { font-size: 10.5px; font-weight: 600; margin-top: 3px; line-height: 1.25; }
+  .stat-card.green { background: var(--success); color: #fff; }
+  .stat-card.blue { background: var(--info); color: #fff; }
+  .stat-card.purple { background: var(--purple); color: #fff; }
+  .section-heading { font-size: 13px; font-weight: 700; color: var(--text-sub); margin: 0 0 10px; }
+  .date-nav { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 16px; }
+  .date-nav button { background: none; border: none; font-size: 16px; color: var(--brand); font-weight: 700; padding: 4px 8px; }
+  .date-nav .date-label { font-weight: 700; font-size: 13.5px; }
+
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 50; }
+  .nav-btn { flex: 1; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; color: var(--text-sub); }
+  .nav-btn .ic { font-size: 19px; }
+  .nav-btn .lbl { font-size: 10px; font-weight: 600; }
+  .nav-btn.active { color: var(--brand); }
+  .fab { width: 46px; height: 46px; border-radius: 50%; background: var(--brand); color: #fff; border: none; font-size: 22px; display: flex; align-items: center; justify-content: center; margin: 0 4px; box-shadow: 0 4px 10px rgba(37,99,235,0.35); flex-shrink: 0; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.4); display: none; align-items: flex-end; z-index: 150; }
+  .modal-overlay.active { display: flex; }
+  .modal-sheet { background: var(--bg); width: 100%; max-height: 92vh; border-radius: 20px 20px 0 0; overflow-y: auto; animation: slideUp 0.22s ease-out; }
+  @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header { display: flex; align-items: center; gap: 10px; padding: 16px; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+  .modal-header .back { background: none; border: none; font-size: 20px; color: var(--brand); font-weight: 700; }
+  .modal-header h3 { margin: 0; font-size: 16px; }
+  .modal-body { padding: 16px; padding-bottom: 32px; }
+
+  .field-group { margin-bottom: 16px; }
+  .field-group-icon { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .field-group-icon .ic { width: 26px; height: 26px; border-radius: 8px; background: var(--brand-light); color: var(--brand); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .field-group-icon label { font-size: 12.5px; font-weight: 600; color: var(--text-sub); }
+
+  .order-line { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .order-line .info { flex: 1; }
+  .order-line .del { background: var(--danger-light); color: var(--danger); border: none; border-radius: 8px; width: 28px; height: 28px; font-size: 14px; }
+  .order-line select, .order-line input { padding: 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; }
+
+  .totals-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 14px 0; }
+  .totals-box .row.total { display: flex; justify-content: space-between; font-weight: 800; font-size: 16px; }
+
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1F2937; color: #fff; padding: 10px 18px; border-radius: 100px; font-size: 12.5px; z-index: 400; opacity: 0; transition: opacity 0.2s; max-width: 85%; text-align: center; }
+  .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
+  <div id="splash-screen">
+    <div class="logo">K-<span>TRONiCS</span></div>
+    <div class="tagline">Empower Your Device</div>
+    <div class="desc">Business management for your daily customers, stock, and orders.</div>
+    <div class="splash-grid">
+      <div class="splash-card"><div class="ic">👥</div><div class="t">Customers</div><div class="s">Manage your customers</div></div>
+      <div class="splash-card"><div class="ic">📦</div><div class="t">Stock</div><div class="s">Check inventory & products</div></div>
+      <div class="splash-card"><div class="ic">🧾</div><div class="t">Orders</div><div class="s">Create & manage sales orders</div></div>
+      <div class="splash-card"><div class="ic">📊</div><div class="t">Today</div><div class="s">View daily sales report</div></div>
+    </div>
+    <button class="get-started" onclick="dismissSplash()">Get Started</button>
+  </div>
+
   <div id="gate-screen">
-    <div class="box">
-      <div class="icon">🔒</div>
+    <div class="login-box">
+      <div class="lock">🔒</div>
       <h2>K-TRONiCS Login</h2>
-      <form id="login-form" onsubmit="handleLogin(event)" style="text-align:left; margin-top: 16px;">
-        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">User ID</label>
-        <input type="text" id="login-userid" required autocomplete="username" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:12px; font-size:14px; box-sizing:border-box;">
-        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Password</label>
-        <input type="password" id="login-password" required autocomplete="current-password" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:16px; font-size:14px; box-sizing:border-box;">
-        <button type="submit" id="login-btn" style="width:100%; padding:12px; background: var(--brand, #2563eb); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600;">Log In</button>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <label class="field-label">User ID</label>
+        <input type="text" id="login-userid" class="field-input" required autocomplete="username">
+        <label class="field-label">Password</label>
+        <input type="password" id="login-password" class="field-input" required autocomplete="current-password">
+        <button type="submit" id="login-btn" class="primary-btn">Log In</button>
       </form>
-      <p id="gate-message" style="margin-top:12px;"></p>
+      <p id="gate-message"></p>
     </div>
   </div>
 
-  <header>
-    <h1>⚙️ K-TRONiCS ERP</h1>
-    <div class="who" id="who-label"></div>
-  </header>
-
-  <div id="screens">
-
-    <!-- CUSTOMERS SCREEN -->
-    <section id="screen-customers" class="screen active">
-      <div class="search-bar">
-        <input type="text" id="customer-search" placeholder="Search customers..." oninput="renderCustomers()">
+  <div id="app-shell">
+    <div class="app-header">
+      <div class="row">
+        <div>
+          <div class="brand-name">K-TRONiCS ERP</div>
+          <div class="brand-sub">mini app</div>
+        </div>
+        <div class="who" id="who-label"></div>
       </div>
+    </div>
+
+    <div class="tab-content active" id="tab-customers">
+      <div class="search-bar"><span class="ic">🔍</span><input type="text" id="cust-search" placeholder="Search customers..." oninput="renderCustomers()"></div>
+      <button class="add-btn-full" onclick="openCustomerModal()">➕ Add Customer</button>
       <div id="customers-list"></div>
-    </section>
+    </div>
 
-    <!-- STOCK SCREEN -->
-    <section id="screen-stock" class="screen">
-      <div class="search-bar">
-        <input type="text" id="stock-search" placeholder="Search products..." oninput="renderStock()">
-      </div>
+    <div class="tab-content" id="tab-stock">
+      <div class="search-bar"><span class="ic">🔍</span><input type="text" id="stock-search" placeholder="Search products..." oninput="renderStock()"></div>
+      <div class="filter-pills" id="stock-filter-pills"></div>
       <div id="stock-list"></div>
-    </section>
+    </div>
 
-    <!-- ORDERS SCREEN -->
-    <section id="screen-orders" class="screen">
-      <div class="search-bar">
-        <input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()">
+    <div class="tab-content" id="tab-orders">
+      <div class="search-bar"><span class="ic">🔍</span><input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()"></div>
+      <div class="filter-pills">
+        <button class="filter-pill active" data-status="ALL" onclick="setOrderFilter('ALL')">All</button>
+        <button class="filter-pill" data-status="Draft" onclick="setOrderFilter('Draft')">Draft</button>
+        <button class="filter-pill" data-status="Confirmed" onclick="setOrderFilter('Confirmed')">Confirmed</button>
+        <button class="filter-pill" data-status="Cancelled" onclick="setOrderFilter('Cancelled')">Cancelled</button>
       </div>
       <div id="orders-list"></div>
-    </section>
+    </div>
 
-    <!-- DAILY REPORT SCREEN -->
-    <section id="screen-report" class="screen">
+    <div class="tab-content" id="tab-today">
+      <div class="date-nav">
+        <button onclick="shiftReportDate(-1)">‹</button>
+        <span class="date-label" id="report-date-label"></span>
+        <button onclick="shiftReportDate(1)">›</button>
+      </div>
       <div id="report-content"></div>
-    </section>
+    </div>
 
+    <div class="bottom-nav">
+      <button class="nav-btn active" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
+      <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Stock</span></button>
+      <button class="fab" onclick="handleFabClick()">➕</button>
+      <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
+      <button class="nav-btn" data-tab="today" onclick="switchTab('today')"><span class="ic">📊</span><span class="lbl">Today</span></button>
+    </div>
   </div>
 
-  <button class="fab" id="fab-btn" onclick="handleFabClick()">+</button>
-
-  <nav class="tabs">
-    <button class="tab-btn active" data-tab="customers" onclick="switchTab('customers')">
-      <span class="ic">👥</span><span>Customers</span>
-    </button>
-    <button class="tab-btn" data-tab="stock" onclick="switchTab('stock')">
-      <span class="ic">📦</span><span>Stock</span>
-    </button>
-    <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">
-      <span class="ic">📈</span><span>Orders</span>
-    </button>
-    <button class="tab-btn" data-tab="report" onclick="switchTab('report')">
-      <span class="ic">📊</span><span>Today</span>
-    </button>
-  </nav>
-
-  <!-- Add/Edit Customer Modal -->
   <div class="modal-overlay" id="customer-modal">
     <div class="modal-sheet">
-      <h2>➕ Add Customer</h2>
-      <div class="field"><label>Customer Name</label><input type="text" id="cf-name"></div>
-      <div class="field-row">
-        <div class="field"><label>Contact No.</label><input type="text" id="cf-contact"></div>
-        <div class="field"><label>Location</label><input type="text" id="cf-location"></div>
+      <div class="modal-header"><button class="back" onclick="closeModal('customer-modal')">‹</button><h3>Add Customer</h3></div>
+      <div class="modal-body">
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">👤</span><label>Customer Name *</label></div>
+          <input type="text" id="new-cust-name" class="field-input" placeholder="Enter customer name">
+        </div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📞</span><label>Phone Number *</label></div>
+          <input type="text" id="new-cust-phone" class="field-input" placeholder="+855 12 345 678">
+        </div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📍</span><label>Address</label></div>
+          <input type="text" id="new-cust-address" class="field-input" placeholder="Enter address">
+        </div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📝</span><label>Notes</label></div>
+          <textarea id="new-cust-notes" class="field-input" rows="3" placeholder="Additional notes..."></textarea>
+        </div>
+        <button class="primary-btn" onclick="submitNewCustomer()">Save Customer</button>
       </div>
-      <div class="field"><label>Address</label><input type="text" id="cf-address"></div>
-      <button class="primary-btn" onclick="submitNewCustomer()">Save Customer</button>
     </div>
   </div>
 
-  <!-- New Order Modal -->
   <div class="modal-overlay" id="order-modal">
     <div class="modal-sheet">
-      <h2>➕ New Sales Order</h2>
-      <div class="field"><label>Customer</label><select id="of-customer"></select></div>
-      <div id="order-items"></div>
-      <button type="button" class="add-item-btn" onclick="addOrderItemRow()">+ Add Product</button>
-      <div class="order-total"><span>Total</span><span id="order-total-display">$0.00</span></div>
-      <button class="primary-btn" id="submit-order-btn" onclick="submitNewOrder()">Create Order</button>
+      <div class="modal-header"><button class="back" onclick="closeModal('order-modal')">‹</button><h3>New Order</h3></div>
+      <div class="modal-body">
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">👤</span><label>Customer *</label></div>
+          <select id="new-order-customer" class="field-input"></select>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <span class="field-label" style="margin:0;">Products</span>
+          <button onclick="addOrderItemRow()" style="background:var(--brand-light); color:var(--brand); border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:700;">➕ Add Product</button>
+        </div>
+        <div id="order-items"></div>
+        <div class="totals-box"><div class="row total"><span>Total</span><span id="order-total">$0.00</span></div></div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📝</span><label>Notes (optional)</label></div>
+          <textarea id="new-order-notes" class="field-input" rows="2" placeholder="Add any notes..."></textarea>
+        </div>
+        <button class="primary-btn" onclick="submitNewOrder()">Save Order</button>
+      </div>
     </div>
   </div>
 
-  <div id="toast"></div>
+  <div class="toast" id="toast"></div>
 
 <script>
-  // ============================================================
-  // CONFIG -- fill this in with your actual Apps Script Web App URL
-  // (Deploy > Manage deployments > copy the /exec URL)
-  // ============================================================
   const API_URL = 'https://script.google.com/macros/s/AKfycbzR3cNfKIHJ12Pxy_Q1vZFsgzjcmrtoD7WYzpJzt4TCk2oAxFlpUqOLrD2yTg-U929SaQ/exec';
-
   const tg = window.Telegram ? window.Telegram.WebApp : null;
   if (tg) { tg.ready(); tg.expand(); }
 
   let currentUser = null;
-  let currentUserEmail = ''; // the User ID they logged in with, sent with every request after login
+  let currentUserEmail = '';
   let customerCache = [];
   let stockCache = [];
   let ordersCache = [];
   let orderMetaCache = { reps: [], customers: [], inventory: [] };
+  let stockCategoryFilter = 'ALL';
+  let orderStatusFilter = 'ALL';
+  let reportDateOffset = 0;
+
+  const AVATAR_COLORS = ['#2563EB', '#8B5CF6', '#F59E0B', '#10B981', '#EF4444', '#0EA5E9', '#EC4899'];
+  function avatarColorFor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+  }
+  function initialsFor(name) {
+    const parts = String(name || '?').trim().split(/\s+/);
+    return ((parts[0] || '?')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
 
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.innerText = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2200);
+    setTimeout(() => t.classList.remove('show'), 2600);
   }
+
+  function dismissSplash() { document.getElementById('splash-screen').classList.add('hidden'); }
 
   function apiCall(action, extra) {
     extra = extra || {};
     const initData = tg ? tg.initData : '';
     return fetch(API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight against Apps Script
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(Object.assign({ action, initData, email: currentUserEmail }, extra))
     }).then(r => r.json());
   }
 
-  // ---- Boot sequence ----
-  // Only checks that this is genuinely running inside Telegram (needed for
-  // the request-integrity check on every call) -- the actual login is a
-  // separate step the person completes via the User ID/Password form below.
   function boot() {
     if (!tg || !tg.initData) {
-      document.getElementById('gate-message').innerText =
-        'This app only works when opened from inside Telegram.';
+      document.getElementById('gate-message').innerText = 'This app only works when opened from inside Telegram.';
       document.getElementById('login-btn').disabled = true;
     }
   }
@@ -295,14 +351,8 @@
     const password = document.getElementById('login-password').value;
     const btn = document.getElementById('login-btn');
     const msg = document.getElementById('gate-message');
+    btn.disabled = true; btn.innerText = 'Logging in...'; msg.innerText = '';
 
-    btn.disabled = true;
-    btn.innerText = 'Logging in...';
-    msg.innerText = '';
-
-    // email isn't set yet at this point -- apiCall sends it along with
-    // every OTHER call, but login itself is what establishes it, so it's
-    // passed directly here instead.
     fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -310,42 +360,40 @@
     }).then(r => r.json()).then(res => {
       if (!res.authorized) {
         msg.innerText = res.message || 'Login failed.';
-        btn.disabled = false;
-        btn.innerText = 'Log In';
+        btn.disabled = false; btn.innerText = 'Log In';
         return;
       }
       currentUserEmail = userId;
       currentUser = res;
       document.getElementById('who-label').innerText = res.role === 'Admin' ? 'Admin' : res.salesRepName;
-      document.getElementById('gate-screen').style.display = 'none';
+      document.getElementById('gate-screen').classList.add('hidden');
+      document.getElementById('app-shell').classList.add('active');
       loadCustomers();
       loadStock();
       loadOrders();
+      loadReport();
     }).catch(err => {
       msg.innerText = 'Connection error: ' + err.message;
-      btn.disabled = false;
-      btn.innerText = 'Log In';
+      btn.disabled = false; btn.innerText = 'Log In';
     });
   }
-  window.addEventListener('load', boot);
 
-  // ---- Tabs ----
   function switchTab(tab) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('screen-' + tab).classList.add('active');
-    document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
-    if (tab === 'report') loadReport(); // always fresh -- "today" can change mid-session
+    document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelector(`.nav-btn[data-tab="${tab}"]`).classList.add('active');
   }
 
   function handleFabClick() {
-    const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+    const activeTab = document.querySelector('.nav-btn.active').dataset.tab;
     if (activeTab === 'customers') openCustomerModal();
     else if (activeTab === 'orders') openOrderModal();
     else showToast(activeTab === 'stock' ? 'Stock is view-only here.' : 'This is a summary, nothing to add here.');
   }
 
-  // ---- CUSTOMERS ----
+  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
   function loadCustomers() {
     apiCall('getCustomers').then(res => {
       if (!res.success) return showToast(res.message);
@@ -355,46 +403,43 @@
   }
 
   function renderCustomers() {
-    const q = document.getElementById('customer-search').value.trim().toLowerCase();
+    const q = document.getElementById('cust-search').value.trim().toLowerCase();
     const list = document.getElementById('customers-list');
-    const filtered = customerCache.filter(c => !q || String(c.Customer_Name || '').toLowerCase().includes(q));
+    const filtered = customerCache.filter(c => !q ||
+      String(c.Customer_Name || '').toLowerCase().includes(q) ||
+      String(c.Contact_No || '').toLowerCase().includes(q));
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="icon">👥</div><div class="title">No customers yet</div><div class="sub">Tap + to add your first one</div></div>`;
+      list.innerHTML = `<div class="empty-state"><div class="ic">👥</div><div class="t">No customers yet</div><div class="s">Tap "Add Customer" to create your first one</div></div>`;
       return;
     }
-    list.innerHTML = filtered.map(c => `
-      <div class="card">
-        <div class="row1">
-          <div>
-            <div class="name">${c.Customer_Name || ''}</div>
-            <div class="meta">${c.Contact_No || 'No phone'} ${c.Location ? '· ' + c.Location : ''}</div>
-          </div>
-          <span class="badge ${String(c.Status).toLowerCase() === 'active' ? 'ok' : 'neutral'}">${c.Status || 'Active'}</span>
+    list.innerHTML = filtered.map(c => {
+      const name = c.Customer_Name || 'Unnamed';
+      return `
+      <div class="list-card">
+        <div class="avatar" style="background:${avatarColorFor(name)}">${initialsFor(name)}</div>
+        <div class="body">
+          <div class="title">${name}</div>
+          <div class="sub">${c.Contact_No || 'No phone number'}</div>
         </div>
-      </div>`).join('');
+        <span class="chev">›</span>
+      </div>`;
+    }).join('');
   }
 
   function openCustomerModal() {
-    document.getElementById('cf-name').value = '';
-    document.getElementById('cf-contact').value = '';
-    document.getElementById('cf-location').value = '';
-    document.getElementById('cf-address').value = '';
+    document.getElementById('new-cust-name').value = '';
+    document.getElementById('new-cust-phone').value = '';
+    document.getElementById('new-cust-address').value = '';
+    document.getElementById('new-cust-notes').value = '';
     document.getElementById('customer-modal').classList.add('active');
   }
-  function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
   function submitNewCustomer() {
-    const name = document.getElementById('cf-name').value.trim();
-    if (!name) return showToast('Please enter a customer name.');
-    apiCall('saveCustomer', {
-      payload: {
-        Customer_Name: name,
-        Contact_No: document.getElementById('cf-contact').value.trim(),
-        Location: document.getElementById('cf-location').value.trim(),
-        Address: document.getElementById('cf-address').value.trim()
-      }
-    }).then(res => {
+    const name = document.getElementById('new-cust-name').value.trim();
+    const phone = document.getElementById('new-cust-phone').value.trim();
+    if (!name || !phone) return showToast('Name and phone number are required.');
+    apiCall('saveCustomer', { payload: { Customer_Name: name, Contact_No: phone, Address: document.getElementById('new-cust-address').value.trim(), Notes: document.getElementById('new-cust-notes').value.trim() } }).then(res => {
       if (!res.success) return showToast(res.message);
       showToast('Customer saved!');
       closeModal('customer-modal');
@@ -402,42 +447,46 @@
     });
   }
 
-  // ---- STOCK -- shows only what THIS rep actually has, not the whole catalog ----
   function loadStock() {
     apiCall('getMyRepStock').then(res => {
       if (!res.success) return showToast(res.message);
       stockCache = res.items;
+      renderStockFilterPills();
       renderStock();
     });
   }
 
+  function renderStockFilterPills() {
+    const cats = Array.from(new Set(stockCache.map(i => i.Category).filter(Boolean)));
+    const pills = document.getElementById('stock-filter-pills');
+    pills.innerHTML = `<button class="filter-pill ${stockCategoryFilter === 'ALL' ? 'active' : ''}" onclick="setStockFilter('ALL')">All</button>` +
+      cats.map(c => `<button class="filter-pill ${stockCategoryFilter === c ? 'active' : ''}" onclick="setStockFilter('${c.replace(/'/g, "\\'")}')">${c}</button>`).join('');
+  }
+
+  function setStockFilter(cat) { stockCategoryFilter = cat; renderStockFilterPills(); renderStock(); }
+
   function renderStock() {
     const q = document.getElementById('stock-search').value.trim().toLowerCase();
     const list = document.getElementById('stock-list');
-    const filtered = stockCache.filter(i => !q ||
-      String(i.Product_Name || '').toLowerCase().includes(q) ||
-      String(i.SKU || '').toLowerCase().includes(q));
+    const filtered = stockCache.filter(i =>
+      (stockCategoryFilter === 'ALL' || i.Category === stockCategoryFilter) &&
+      (!q || String(i.Product_Name || '').toLowerCase().includes(q) || String(i.SKU || '').toLowerCase().includes(q)));
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="icon">📦</div><div class="title">No stock allocated to you yet</div><div class="sub">Ask your admin to transfer some stock to you</div></div>`;
+      list.innerHTML = `<div class="empty-state"><div class="ic">📦</div><div class="t">No stock allocated to you</div><div class="s">Ask your admin to transfer some stock to you</div></div>`;
       return;
     }
-    list.innerHTML = filtered.map(i => {
-      const badgeClass = i.MyStock <= 0 ? 'danger' : (i.MyStock <= 5 ? 'warn' : 'ok');
-      return `
-      <div class="card">
-        <div class="row1">
-          <div>
-            <div class="name">${i.Product_Name || ''}</div>
-            <div class="meta">${i.SKU} · $${Number(i.Unit_Price || 0).toFixed(2)}</div>
-          </div>
-          <span class="badge ${badgeClass}">${i.MyStock} yours</span>
+    list.innerHTML = filtered.map(i => `
+      <div class="list-card">
+        <div class="avatar" style="background:#EEF2FF; color:var(--brand); font-size:18px;">📦</div>
+        <div class="body">
+          <div class="title">${i.Product_Name}</div>
+          <div class="sub">Stock: ${i.MyStock} · $${Number(i.Unit_Price).toFixed(2)}</div>
         </div>
-      </div>`;
-    }).join('');
+        <span class="chev">›</span>
+      </div>`).join('');
   }
 
-  // ---- ORDERS ----
   function loadOrders() {
     apiCall('getSalesOrders').then(res => {
       if (!res.success) return showToast(res.message);
@@ -449,54 +498,51 @@
   function groupOrdersBySO(rows) {
     const grouped = {};
     rows.forEach(r => {
-      const id = String(r.SO_Number || '').trim();
-      if (!id) return;
-      if (!grouped[id]) {
-        grouped[id] = { SO_Number: id, Order_Date: r.Order_Date, Customer_Name: r.Customer_Name,
-          Order_Status: r.Order_Status, Payment_Status: r.Payment_Status, Total_Amount: 0 };
-      }
-      grouped[id].Total_Amount += Number(r.Total_Amount) || 0;
+      const so = r.SO_Number;
+      if (!grouped[so]) grouped[so] = { SO_Number: so, Order_Date: r.Order_Date, Customer_Name: r.Customer_Name, Order_Status: r.Order_Status, Total: 0 };
+      grouped[so].Total += Number(r.Total_Amount) || 0;
     });
     return Object.values(grouped).sort((a, b) => String(b.Order_Date).localeCompare(String(a.Order_Date)));
+  }
+
+  function setOrderFilter(status) {
+    orderStatusFilter = status;
+    document.querySelectorAll('#tab-orders .filter-pill').forEach(p => p.classList.toggle('active', p.dataset.status === status));
+    renderOrders();
   }
 
   function renderOrders() {
     const q = document.getElementById('orders-search').value.trim().toLowerCase();
     const list = document.getElementById('orders-list');
-    const filtered = ordersCache.filter(o => !q ||
-      String(o.Customer_Name || '').toLowerCase().includes(q) ||
-      String(o.SO_Number || '').toLowerCase().includes(q));
+    const filtered = ordersCache.filter(o =>
+      (orderStatusFilter === 'ALL' || o.Order_Status === orderStatusFilter) &&
+      (!q || String(o.Customer_Name || '').toLowerCase().includes(q) || String(o.SO_Number || '').toLowerCase().includes(q)));
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="icon">📈</div><div class="title">No orders yet</div><div class="sub">Tap + to create one</div></div>`;
+      list.innerHTML = `<div class="empty-state"><div class="ic">🧾</div><div class="t">No orders found</div><div class="s">Tap the + button to create one</div></div>`;
       return;
     }
-    const statusClass = { Draft: 'neutral', Confirmed: 'ok', Cancelled: 'danger' };
-    list.innerHTML = filtered.map(o => `
-      <div class="card">
-        <div class="row1">
-          <div>
-            <div class="name">${o.Customer_Name || ''}</div>
-            <div class="meta">${o.SO_Number} · ${o.Order_Date}</div>
-          </div>
-          <span class="badge ${statusClass[o.Order_Status] || 'neutral'}">${o.Order_Status}</span>
+    list.innerHTML = filtered.map(o => {
+      const badgeClass = o.Order_Status === 'Confirmed' ? 'confirmed' : (o.Order_Status === 'Cancelled' ? 'cancelled' : 'pending');
+      return `
+      <div class="list-card">
+        <div class="body">
+          <div class="title" style="display:flex; justify-content:space-between; align-items:center;"><span>${o.SO_Number}</span><span class="badge ${badgeClass}">${o.Order_Status}</span></div>
+          <div class="sub">${o.Customer_Name} · ${o.Order_Date}</div>
         </div>
-        <div class="row1" style="margin-top:8px;">
-          <span class="meta">${o.Payment_Status}</span>
-          <span style="font-weight:700;">$${o.Total_Amount.toFixed(2)}</span>
-        </div>
-      </div>`).join('');
+        <div class="trailing"><div class="title">$${o.Total.toFixed(2)}</div></div>
+      </div>`;
+    }).join('');
   }
 
   function openOrderModal() {
     apiCall('getSalesOrderMetaData').then(res => {
-      if (!res.success) return showToast(res.message);
+      if (!res.success) return showToast('Could not load order data.');
       orderMetaCache = res.data;
-
-      const custSelect = document.getElementById('of-customer');
-      custSelect.innerHTML = orderMetaCache.customers.map(c => `<option value="${c.Customer_Name}">${c.Customer_Name}</option>`).join('');
-
+      const custSelect = document.getElementById('new-order-customer');
+      custSelect.innerHTML = '<option value="">Select customer...</option>' + orderMetaCache.customers.map(c => `<option value="${c.Customer_Name}">${c.Customer_Name}</option>`).join('');
       document.getElementById('order-items').innerHTML = '';
+      document.getElementById('new-order-notes').value = '';
       addOrderItemRow();
       updateOrderTotal();
       document.getElementById('order-modal').classList.add('active');
@@ -506,124 +552,99 @@
   function addOrderItemRow() {
     const container = document.getElementById('order-items');
     const row = document.createElement('div');
-    row.className = 'order-item-row';
-
-    // Caps against what THIS rep specifically has (their own Rep_Stock_*
-    // column), not the total across everyone -- Total_Available_Stock would
-    // let someone pick a quantity here that gets rejected at submit time
-    // for exceeding their own real allocation.
-    const myColumn = 'Rep_Stock_' + (currentUser.salesRepName || '');
+    row.className = 'order-line';
     const options = orderMetaCache.inventory.map(inv => {
+      const myColumn = 'Rep_Stock_' + (currentUser.salesRepName || '');
       const avail = Number(inv[myColumn]) || 0;
-      const disabled = avail <= 0 ? 'disabled' : '';
-      const label = avail <= 0 ? `${inv.Product_Name} -- none allocated to you` : `${inv.Product_Name} (${avail} yours)`;
-      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${disabled}>${label}</option>`;
+      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 ? 'disabled' : ''}>${inv.Product_Name} (${avail} yours)</option>`;
     }).join('');
-
     row.innerHTML = `
-      <select onchange="onOrderProductChange(this)"><option value="">Select product...</option>${options}</select>
-      <input type="number" min="1" value="1" oninput="updateOrderTotal()">
-      <button type="button" class="rm" onclick="this.closest('.order-item-row').remove(); updateOrderTotal();">✕</button>
-    `;
+      <div class="info">
+        <select class="order-sku" style="width:100%; margin-bottom:6px;" onchange="onOrderProductChange(this)"><option value="">Select product...</option>${options}</select>
+        <div style="display:flex; gap:6px;">
+          <input type="number" class="order-qty" min="1" value="1" style="width:60px;" oninput="updateOrderTotal()">
+          <input type="number" class="order-price" step="0.01" value="0" style="width:80px;" oninput="updateOrderTotal()">
+        </div>
+      </div>
+      <button class="del" onclick="this.closest('.order-line').remove(); updateOrderTotal();">✕</button>`;
     container.appendChild(row);
   }
 
   function onOrderProductChange(select) {
     const opt = select.options[select.selectedIndex];
-    const qtyInput = select.closest('.order-item-row').querySelector('input');
+    const row = select.closest('.order-line');
+    row.querySelector('.order-price').value = opt.getAttribute('data-price') || 0;
     const available = Number(opt.getAttribute('data-available')) || 0;
-    qtyInput.setAttribute('max', available);
-    if (Number(qtyInput.value) > available) qtyInput.value = available;
+    row.querySelector('.order-qty').max = available;
     updateOrderTotal();
   }
 
   function updateOrderTotal() {
     let total = 0;
-    document.querySelectorAll('.order-item-row').forEach(row => {
-      const select = row.querySelector('select');
-      const qty = Number(row.querySelector('input').value) || 0;
-      const opt = select.options[select.selectedIndex];
-      const price = opt ? Number(opt.getAttribute('data-price')) || 0 : 0;
+    document.querySelectorAll('.order-line').forEach(row => {
+      const qty = Number(row.querySelector('.order-qty').value) || 0;
+      const price = Number(row.querySelector('.order-price').value) || 0;
       total += qty * price;
     });
-    document.getElementById('order-total-display').innerText = '$' + total.toFixed(2);
+    document.getElementById('order-total').innerText = '$' + total.toFixed(2);
   }
 
   function submitNewOrder() {
-    const customer = document.getElementById('of-customer').value;
+    const customer = document.getElementById('new-order-customer').value;
     if (!customer) return showToast('Please select a customer.');
-
     const items = [];
-    document.querySelectorAll('.order-item-row').forEach(row => {
-      const select = row.querySelector('select');
-      const qty = Number(row.querySelector('input').value) || 0;
-      if (select.value && qty > 0) {
-        const opt = select.options[select.selectedIndex];
-        items.push({ sku: select.value, qty: qty, price: Number(opt.getAttribute('data-price')) || 0, product_name: opt.innerText });
-      }
+    document.querySelectorAll('.order-line').forEach(row => {
+      const select = row.querySelector('.order-sku');
+      const sku = select.value;
+      const productName = select.options[select.selectedIndex].text;
+      const qty = Number(row.querySelector('.order-qty').value);
+      const price = Number(row.querySelector('.order-price').value);
+      if (sku && qty > 0) items.push({ sku, product_name: productName, qty, price });
     });
-    if (items.length === 0) return showToast('Please add at least one product.');
+    if (items.length === 0) return showToast('Add at least one product.');
 
-    const btn = document.getElementById('submit-order-btn');
-    btn.disabled = true;
-    btn.innerText = 'Creating...';
-
-    apiCall('saveSalesOrder', {
-      payload: { Customer_Name: customer, Order_Status: 'Confirmed', Paid_Amount: 0, items: items }
-    }).then(res => {
-      btn.disabled = false;
-      btn.innerText = 'Create Order';
+    apiCall('saveSalesOrder', { payload: { Customer_Name: customer, Order_Status: 'Confirmed', Paid_Amount: 0, items } }).then(res => {
       if (!res.success) return showToast(res.message);
-      showToast('Order created!');
+      showToast('Order saved!');
       closeModal('order-modal');
       loadOrders();
-      loadStock(); // stock levels just changed
+      loadStock();
+      loadReport();
     });
   }
 
-  // ---- DAILY REPORT ----
+  function shiftReportDate(delta) { reportDateOffset += delta; loadReport(); }
+
   function loadReport() {
+    const d = new Date();
+    d.setDate(d.getDate() + reportDateOffset);
+    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    document.getElementById('report-date-label').innerText = dateStr;
+
     const content = document.getElementById('report-content');
-    content.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><div class="sub">Loading today's summary...</div></div>`;
-    apiCall('getDailyReport').then(res => {
-      if (!res.success) { content.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><div class="title">Couldn't load report</div><div class="sub">${res.message || ''}</div></div>`; return; }
+    content.innerHTML = `<div class="empty-state"><div class="ic">⏳</div><div class="s">Loading...</div></div>`;
+    apiCall('getDailyReport', { date: dateStr }).then(res => {
+      if (!res.success) { content.innerHTML = `<div class="empty-state"><div class="ic">⚠️</div><div class="t">Couldn't load report</div></div>`; return; }
       renderReport(res);
     });
   }
 
   function renderReport(r) {
     const content = document.getElementById('report-content');
-    if (r.orderCount === 0) {
-      content.innerHTML = `
-        <div class="card" style="text-align:center; padding: 24px;">
-          <div class="meta" style="margin-bottom:4px;">${r.date}</div>
-          <div class="name" style="font-size:16px;">No confirmed orders yet today</div>
-        </div>`;
-      return;
-    }
     content.innerHTML = `
-      <div class="card">
-        <div class="meta">${r.date} · ${r.salesRepName || 'You'}</div>
-        <div class="row1" style="margin-top:10px;">
-          <div>
-            <div class="meta">Orders</div>
-            <div class="name" style="font-size:22px;">${r.orderCount}</div>
-          </div>
-          <div style="text-align:right;">
-            <div class="meta">Revenue</div>
-            <div class="name" style="font-size:22px; color: var(--success);">$${r.totalRevenue}</div>
-          </div>
-        </div>
-        <div class="row1" style="margin-top:10px;">
-          <span class="meta">Units sold</span>
-          <span style="font-weight:700;">${r.totalUnitsSold}</span>
-        </div>
+      <div class="stat-grid">
+        <div class="stat-card green"><div class="num">${r.orderCount}</div><div class="lbl">Total Orders</div></div>
+        <div class="stat-card blue"><div class="num">$${r.totalRevenue}</div><div class="lbl">Total Sales</div></div>
+        <div class="stat-card purple"><div class="num">${r.customers.length}</div><div class="lbl">Customers</div></div>
       </div>
-      <div class="card">
-        <div class="meta" style="margin-bottom:8px;">Customers sold to today (${r.customers.length})</div>
-        ${r.customers.map(c => `<div class="row1" style="padding: 6px 0; border-top: 1px solid var(--line);"><span>${c}</span></div>`).join('')}
-      </div>`;
+      <div class="section-heading">Customers Sold To</div>
+      ${r.customers.length === 0
+        ? `<div class="empty-state"><div class="ic">📊</div><div class="t">No confirmed orders yet</div></div>`
+        : r.customers.map(c => `<div class="list-card"><div class="body"><div class="title">${c}</div></div></div>`).join('')}
+    `;
   }
+
+  boot();
 </script>
 </body>
 </html>
