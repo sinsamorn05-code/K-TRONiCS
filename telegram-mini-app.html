@@ -147,9 +147,16 @@
 
   <div id="gate-screen">
     <div class="box">
-      <div class="icon">⏳</div>
-      <h2>Checking access...</h2>
-      <p id="gate-message">Connecting to your ERP system.</p>
+      <div class="icon">🔒</div>
+      <h2>K-TRONiCS Login</h2>
+      <form id="login-form" onsubmit="handleLogin(event)" style="text-align:left; margin-top: 16px;">
+        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">User ID</label>
+        <input type="text" id="login-userid" required autocomplete="username" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:12px; font-size:14px; box-sizing:border-box;">
+        <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Password</label>
+        <input type="password" id="login-password" required autocomplete="current-password" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; margin-bottom:16px; font-size:14px; box-sizing:border-box;">
+        <button type="submit" id="login-btn" style="width:100%; padding:12px; background: var(--brand, #2563eb); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:600;">Log In</button>
+      </form>
+      <p id="gate-message" style="margin-top:12px;"></p>
     </div>
   </div>
 
@@ -247,6 +254,7 @@
   if (tg) { tg.ready(); tg.expand(); }
 
   let currentUser = null;
+  let currentUserEmail = ''; // the User ID they logged in with, sent with every request after login
   let customerCache = [];
   let stockCache = [];
   let ordersCache = [];
@@ -265,22 +273,48 @@
     return fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids a CORS preflight against Apps Script
-      body: JSON.stringify(Object.assign({ action, initData }, extra))
+      body: JSON.stringify(Object.assign({ action, initData, email: currentUserEmail }, extra))
     }).then(r => r.json());
   }
 
   // ---- Boot sequence ----
+  // Only checks that this is genuinely running inside Telegram (needed for
+  // the request-integrity check on every call) -- the actual login is a
+  // separate step the person completes via the User ID/Password form below.
   function boot() {
     if (!tg || !tg.initData) {
       document.getElementById('gate-message').innerText =
         'This app only works when opened from inside Telegram.';
-      return;
+      document.getElementById('login-btn').disabled = true;
     }
-    apiCall('whoAmI').then(res => {
-      if (!res.success) {
-        document.getElementById('gate-message').innerText = res.message || 'Access denied.';
+  }
+
+  function handleLogin(event) {
+    event.preventDefault();
+    const userId = document.getElementById('login-userid').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn = document.getElementById('login-btn');
+    const msg = document.getElementById('gate-message');
+
+    btn.disabled = true;
+    btn.innerText = 'Logging in...';
+    msg.innerText = '';
+
+    // email isn't set yet at this point -- apiCall sends it along with
+    // every OTHER call, but login itself is what establishes it, so it's
+    // passed directly here instead.
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'login', initData: tg ? tg.initData : '', email: userId, password: password })
+    }).then(r => r.json()).then(res => {
+      if (!res.authorized) {
+        msg.innerText = res.message || 'Login failed.';
+        btn.disabled = false;
+        btn.innerText = 'Log In';
         return;
       }
+      currentUserEmail = userId;
       currentUser = res;
       document.getElementById('who-label').innerText = res.role === 'Admin' ? 'Admin' : res.salesRepName;
       document.getElementById('gate-screen').style.display = 'none';
@@ -288,7 +322,9 @@
       loadStock();
       loadOrders();
     }).catch(err => {
-      document.getElementById('gate-message').innerText = 'Connection error: ' + err.message;
+      msg.innerText = 'Connection error: ' + err.message;
+      btn.disabled = false;
+      btn.innerText = 'Log In';
     });
   }
   window.addEventListener('load', boot);
