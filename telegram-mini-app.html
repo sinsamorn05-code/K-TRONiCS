@@ -226,6 +226,7 @@
 
     <div class="tab-content" id="tab-orders">
       <div class="search-bar"><span class="ic">🔍</span><input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()"></div>
+      <button class="add-btn-full" onclick="openOrderModal()">➕ Add Order</button>
       <div class="filter-pills">
         <button class="filter-pill active" data-status="ALL" onclick="setOrderFilter('ALL')">All</button>
         <button class="filter-pill" data-status="Draft" onclick="setOrderFilter('Draft')">Draft</button>
@@ -236,10 +237,17 @@
     </div>
 
     <div class="tab-content" id="tab-today">
-      <div class="date-nav">
-        <button onclick="shiftReportDate(-1)">‹</button>
-        <span class="date-label" id="report-date-label"></span>
-        <button onclick="shiftReportDate(1)">›</button>
+      <div class="totals-box" style="margin-top:0;">
+        <div style="display:flex; gap:8px; align-items:end;">
+          <div style="flex:1;">
+            <label class="field-label">From</label>
+            <input type="date" id="dash-start-date" class="field-input" style="margin-bottom:0;" onchange="loadReport()">
+          </div>
+          <div style="flex:1;">
+            <label class="field-label">To</label>
+            <input type="date" id="dash-end-date" class="field-input" style="margin-bottom:0;" onchange="loadReport()">
+          </div>
+        </div>
       </div>
       <div id="report-content"></div>
     </div>
@@ -248,9 +256,8 @@
       <button class="nav-btn active" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
       <button class="nav-btn" data-tab="checkin" onclick="switchTab('checkin')"><span class="ic">📷</span><span class="lbl">Check In</span></button>
       <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Stock</span></button>
-      <button class="fab" onclick="handleFabClick()">➕</button>
       <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
-      <button class="nav-btn" data-tab="today" onclick="switchTab('today')"><span class="ic">📊</span><span class="lbl">Today</span></button>
+      <button class="nav-btn" data-tab="today" onclick="switchTab('today')"><span class="ic">📊</span><span class="lbl">Dashboard</span></button>
     </div>
   </div>
 
@@ -341,7 +348,6 @@
   let orderMetaCache = { reps: [], customers: [], inventory: [] };
   let stockCategoryFilter = 'ALL';
   let orderStatusFilter = 'ALL';
-  let reportDateOffset = 0;
 
   const AVATAR_COLORS = ['#2563EB', '#8B5CF6', '#F59E0B', '#10B981', '#EF4444', '#0EA5E9', '#EC4899'];
   function avatarColorFor(name) {
@@ -460,14 +466,6 @@
     document.querySelector(`.nav-btn[data-tab="${tab}"]`).classList.add('active');
   }
 
-  function handleFabClick() {
-    const activeTab = document.querySelector('.nav-btn.active').dataset.tab;
-    if (activeTab === 'customers') openCustomerModal();
-    else if (activeTab === 'orders') openOrderModal();
-    else if (activeTab === 'checkin') openNewShopFromCheckIn();
-    else showToast(activeTab === 'stock' ? 'Stock is view-only here.' : 'This is a summary, nothing to add here.');
-  }
-
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
   function loadCustomers() {
@@ -476,6 +474,7 @@
       customerCache = res.data.rows;
       renderCustomers();
       renderCheckInList(); // uses the same customer data, shares the cache
+      if (lastReportData) renderReport(lastReportData); // keep the dashboard's Customers stat in sync
     });
   }
 
@@ -598,30 +597,35 @@
     const file = event.target.files[0];
     if (!file || !pendingCheckIn) return;
     const { customerId, customerName } = pendingCheckIn;
-    showToast('Uploading photo...');
 
     const reader = new FileReader();
     reader.onload = () => {
       const photoBase64 = reader.result; // a data: URL -- checkInAtShop strips the prefix itself
+      // A short note about the visit -- optional (an empty answer or
+      // Cancel just proceeds with no note, doesn't block the check-in the
+      // way the photo does).
+      const notes = prompt(`Anything to note about this visit to ${customerName}? (optional)`) || '';
+
+      showToast('Uploading photo...');
       // GPS is attempted but never blocks the check-in -- if location is
       // denied or unavailable, the check-in still goes through with the
       // photo alone rather than getting stuck waiting on a permission
       // that may never be granted.
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-          pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude),
-          () => submitCheckIn(customerId, customerName, photoBase64, '', ''),
+          pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude, notes),
+          () => submitCheckIn(customerId, customerName, photoBase64, '', '', notes),
           { timeout: 6000 }
         );
       } else {
-        submitCheckIn(customerId, customerName, photoBase64, '', '');
+        submitCheckIn(customerId, customerName, photoBase64, '', '', notes);
       }
     };
     reader.readAsDataURL(file);
   }
 
-  function submitCheckIn(customerId, customerName, photoBase64, latitude, longitude) {
-    apiCall('checkIn', { payload: { customerId, customerName, photoBase64, latitude, longitude } }).then(res => {
+  function submitCheckIn(customerId, customerName, photoBase64, latitude, longitude, notes) {
+    apiCall('checkIn', { payload: { customerId, customerName, photoBase64, latitude, longitude, notes } }).then(res => {
       pendingCheckIn = null;
       if (!res.success) return showToast(res.message);
       showToast(res.message);
@@ -685,6 +689,7 @@
       stockCache = res.items;
       renderStockFilterPills();
       renderStock();
+      if (lastReportData) renderReport(lastReportData); // keep the dashboard's Stock stat in sync
     });
   }
 
@@ -846,33 +851,45 @@
     });
   }
 
-  function shiftReportDate(delta) { reportDateOffset += delta; loadReport(); }
+  let lastReportData = null; // re-used by loadCustomers/loadStock to keep the dashboard's static stats in sync without a full re-fetch
 
   function loadReport() {
-    const d = new Date();
-    d.setDate(d.getDate() + reportDateOffset);
-    const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-    document.getElementById('report-date-label').innerText = dateStr;
+    const startInput = document.getElementById('dash-start-date');
+    const endInput = document.getElementById('dash-end-date');
+    // Defaults to today on first load, same as before -- but now editable
+    // as a real range instead of only stepping one day at a time.
+    if (!startInput.value) {
+      const today = new Date();
+      const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+      startInput.value = todayStr;
+      endInput.value = todayStr;
+    }
 
     const content = document.getElementById('report-content');
     content.innerHTML = `<div class="empty-state"><div class="ic">⏳</div><div class="s">Loading...</div></div>`;
-    apiCall('getDailyReport', { date: dateStr }).then(res => {
+    apiCall('getDailyReport', { startDate: startInput.value, endDate: endInput.value }).then(res => {
       if (!res.success) { content.innerHTML = `<div class="empty-state"><div class="ic">⚠️</div><div class="t">Couldn't load report</div></div>`; return; }
+      lastReportData = res;
       renderReport(res);
     });
   }
 
   function renderReport(r) {
     const content = document.getElementById('report-content');
+    const totalStockUnits = stockCache.reduce((sum, i) => sum + (Number(i.MyStock) || 0), 0);
     content.innerHTML = `
-      <div class="stat-grid">
-        <div class="stat-card green"><div class="num">${r.orderCount}</div><div class="lbl">Total Orders</div></div>
-        <div class="stat-card blue"><div class="num">$${r.totalRevenue}</div><div class="lbl">Total Sales</div></div>
-        <div class="stat-card purple"><div class="num">${r.customers.length}</div><div class="lbl">Customers</div></div>
+      <div class="stat-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="stat-card purple"><div class="num">${customerCache.length}</div><div class="lbl">Customers</div><div class="lbl" style="opacity:0.85; margin-top:2px;">+${r.newCustomerCount} new</div></div>
+        <div class="stat-card green"><div class="num">${r.checkInCount}</div><div class="lbl">Check-Ins</div></div>
       </div>
-      <div class="section-heading">Customers Sold To</div>
+      <div class="stat-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="stat-card blue"><div class="num">${totalStockUnits}</div><div class="lbl">Stock (units)</div></div>
+        <div class="stat-card" style="background:#F97316; color:#fff;"><div class="num">${r.orderCount}</div><div class="lbl">Orders</div></div>
+      </div>
+      <div class="totals-box"><div class="row total"><span>Total Sales</span><span>$${r.totalRevenue}</span></div></div>
+      <div class="section-heading" style="margin-top:16px;">Customers Sold To (this period)</div>
       ${r.customers.length === 0
-        ? `<div class="empty-state"><div class="ic">📊</div><div class="t">No confirmed orders yet</div></div>`
+        ? `<div class="empty-state"><div class="ic">📊</div><div class="t">No confirmed orders in this range</div></div>`
         : r.customers.map(c => `<div class="list-card"><div class="body"><div class="title">${c}</div></div></div>`).join('')}
     `;
   }
