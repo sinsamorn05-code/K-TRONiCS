@@ -79,11 +79,13 @@
 
   #app-shell { display: none; flex-direction: column; height: 100vh; }
   #app-shell.active { display: flex; }
-  .app-header { background: var(--brand); color: #fff; padding: 14px 16px 12px; flex-shrink: 0; }
+  .app-header { background: var(--card); color: var(--text); padding: 12px 16px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
   .app-header .row { display: flex; align-items: center; justify-content: space-between; }
-  .app-header .brand-name { font-weight: 800; font-size: 16px; }
-  .app-header .brand-sub { font-size: 10.5px; color: #CBDCFF; margin-top: 1px; }
-  .app-header .who { font-size: 11px; background: rgba(255,255,255,0.18); padding: 5px 10px; border-radius: 100px; font-weight: 600; }
+  .app-header .logo-wrap { display: flex; align-items: center; gap: 10px; }
+  .app-header .logo-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; flex-shrink: 0; }
+  .app-header .brand-name { font-weight: 800; font-size: 15px; line-height: 1.2; }
+  .app-header .brand-sub { font-size: 10.5px; color: var(--text-sub); margin-top: 1px; }
+  .app-header .who { font-size: 11px; background: var(--brand-light); color: var(--brand); padding: 5px 10px; border-radius: 100px; font-weight: 700; }
 
   .tab-content { flex: 1; overflow-y: auto; padding: 14px 14px 90px; display: none; }
   .tab-content.active { display: block; }
@@ -194,28 +196,114 @@
   <div id="app-shell">
     <div class="app-header">
       <div class="row">
-        <div>
-          <div class="brand-name">K-TRONiCS ERP</div>
-          <div class="brand-sub">mini app</div>
+        <div class="logo-wrap">
+          <div class="logo-circle">K</div>
+          <div>
+            <div class="brand-name">K-TRONiCS</div>
+            <div class="brand-sub">Business Management</div>
+          </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
           <div class="who" id="who-label"></div>
-          <button onclick="handleLogout()" style="background:rgba(255,255,255,0.18); border:none; color:#fff; font-size:14px; width:28px; height:28px; border-radius:8px;" title="Log out">⎋</button>
+          <button onclick="handleLogout()" style="background:var(--bg); border:none; color:var(--text-sub); font-size:14px; width:28px; height:28px; border-radius:8px;" title="Log out">⎋</button>
         </div>
       </div>
     </div>
 
-    <div class="tab-content active" id="tab-customers">
+    <div class="tab-content active" id="tab-home">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:18px; font-weight:800;" id="home-greeting">Good morning</div>
+        <div style="font-size:12.5px; color:var(--text-sub);" id="home-date"></div>
+        <div style="font-size:12px; color:var(--text-sub); margin-top:2px;">Here's your business overview</div>
+      </div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:18px;">
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
+          <div style="width:34px; height:34px; border-radius:10px; background:var(--success-light); color:var(--success); display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">🛒</div>
+          <div style="font-size:17px; font-weight:800;" id="home-sales">$0.00</div>
+          <div style="font-size:11px; color:var(--text-sub);">Today's Sales</div>
+        </div>
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
+          <div style="width:34px; height:34px; border-radius:10px; background:var(--brand-light); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">📦</div>
+          <div style="font-size:17px; font-weight:800;" id="home-orders">0</div>
+          <div style="font-size:11px; color:var(--text-sub);">Today's Orders</div>
+        </div>
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
+          <div style="width:34px; height:34px; border-radius:10px; background:#F3E8FF; color:#8B5CF6; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">🏷️</div>
+          <div style="font-size:17px; font-weight:800;" id="home-products">0</div>
+          <div style="font-size:11px; color:var(--text-sub);">Total Products</div>
+        </div>
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
+          <div style="width:34px; height:34px; border-radius:10px; background:var(--warning-light); color:#B45309; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">⚠️</div>
+          <div style="font-size:17px; font-weight:800;" id="home-lowstock">0</div>
+          <div style="font-size:11px; color:var(--text-sub);">Low Stock</div>
+        </div>
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; grid-column: span 2;">
+          <div style="width:34px; height:34px; border-radius:10px; background:#FEE2E2; color:#DC2626; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">👥</div>
+          <div style="font-size:17px; font-weight:800;" id="home-customers">0</div>
+          <div style="font-size:11px; color:var(--text-sub);">Total Customers</div>
+        </div>
+      </div>
+
+      <div class="section-heading">Quick Actions</div>
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:18px;">
+        <button onclick="openOrderModal()" style="background:none; border:none; text-align:center;">
+          <div style="width:48px; height:48px; border-radius:50%; background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">🛒</div>
+          <div style="font-size:10.5px; font-weight:700;">New Order</div>
+        </button>
+        <button onclick="openCustomerModal()" style="background:none; border:none; text-align:center;">
+          <div style="width:48px; height:48px; border-radius:50%; background:var(--success); color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">👤</div>
+          <div style="font-size:10.5px; font-weight:700;">Add Customer</div>
+        </button>
+        <button onclick="switchSubScreen('checkin')" style="background:none; border:none; text-align:center;">
+          <div style="width:48px; height:48px; border-radius:50%; background:#8B5CF6; color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">📷</div>
+          <div style="font-size:10.5px; font-weight:700;">Check In</div>
+        </button>
+        <button onclick="switchTab('stock')" style="background:none; border:none; text-align:center;">
+          <div style="width:48px; height:48px; border-radius:50%; background:#F97316; color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">📦</div>
+          <div style="font-size:10.5px; font-weight:700;">View Stock</div>
+        </button>
+      </div>
+
+      <div class="section-heading">Recent Activity</div>
+      <div id="home-activity-list"></div>
+    </div>
+
+    <div class="tab-content" id="tab-customers">
       <div class="search-bar"><span class="ic">🔍</span><input type="text" id="cust-search" placeholder="Search customers..." oninput="renderCustomers()"></div>
       <button class="add-btn-full" onclick="openCustomerModal()">➕ Add Customer</button>
+      <div class="filter-pills" id="cust-date-pills">
+        <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('cust', 'ALL')">All</button>
+        <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('cust', 'TODAY')">Today</button>
+        <button class="filter-pill" data-preset="YESTERDAY" onclick="setDatePreset('cust', 'YESTERDAY')">Yesterday</button>
+        <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('cust', 'WEEK')">This week</button>
+        <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('cust', 'CUSTOM')">Custom</button>
+      </div>
+      <div id="cust-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
+        <input type="date" id="cust-start-date" class="field-input" style="margin-bottom:0;" onchange="loadCustomers()">
+        <input type="date" id="cust-end-date" class="field-input" style="margin-bottom:0;" onchange="loadCustomers()">
+      </div>
       <div id="customers-list"></div>
     </div>
 
     <div class="tab-content" id="tab-checkin">
+      <button onclick="switchSubScreenBack()" style="background:none; border:none; color:var(--brand); font-weight:700; font-size:13px; margin-bottom:10px;">‹ Back</button>
       <div class="search-bar"><span class="ic">🔍</span><input type="text" id="checkin-search" placeholder="Search your shops..." oninput="renderCheckInList()"></div>
       <div style="font-size:11.5px; color:var(--text-sub); margin-bottom:10px;">📷 A photo is required to complete check-in.</div>
       <button class="add-btn-full" style="background:var(--brand-light); color:var(--brand);" onclick="openNewShopFromCheckIn()">➕ Shop not listed? Add New Shop</button>
       <div id="checkin-list"></div>
+
+      <div class="section-heading" style="margin-top:20px;">Check-In History</div>
+      <div class="filter-pills" id="ci-date-pills">
+        <button class="filter-pill active" data-preset="TODAY" onclick="setDatePreset('ci', 'TODAY')">Today</button>
+        <button class="filter-pill" data-preset="YESTERDAY" onclick="setDatePreset('ci', 'YESTERDAY')">Yesterday</button>
+        <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('ci', 'WEEK')">This week</button>
+        <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('ci', 'CUSTOM')">Custom</button>
+      </div>
+      <div id="ci-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
+        <input type="date" id="ci-start-date" class="field-input" style="margin-bottom:0;" onchange="loadCheckInHistory()">
+        <input type="date" id="ci-end-date" class="field-input" style="margin-bottom:0;" onchange="loadCheckInHistory()">
+      </div>
+      <div id="checkin-history-list"></div>
     </div>
 
     <div class="tab-content" id="tab-stock">
@@ -233,10 +321,22 @@
         <button class="filter-pill" data-status="Confirmed" onclick="setOrderFilter('Confirmed')">Confirmed</button>
         <button class="filter-pill" data-status="Cancelled" onclick="setOrderFilter('Cancelled')">Cancelled</button>
       </div>
+      <div class="filter-pills" id="ord-date-pills">
+        <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('ord', 'ALL')">All</button>
+        <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('ord', 'TODAY')">Today</button>
+        <button class="filter-pill" data-preset="YESTERDAY" onclick="setDatePreset('ord', 'YESTERDAY')">Yesterday</button>
+        <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('ord', 'WEEK')">This week</button>
+        <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('ord', 'CUSTOM')">Custom</button>
+      </div>
+      <div id="ord-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
+        <input type="date" id="ord-start-date" class="field-input" style="margin-bottom:0;" onchange="loadOrders()">
+        <input type="date" id="ord-end-date" class="field-input" style="margin-bottom:0;" onchange="loadOrders()">
+      </div>
       <div id="orders-list"></div>
     </div>
 
     <div class="tab-content" id="tab-today">
+      <button onclick="switchSubScreenBack()" style="background:none; border:none; color:var(--brand); font-weight:700; font-size:13px; margin-bottom:10px;">‹ Back</button>
       <div class="totals-box" style="margin-top:0;">
         <div style="display:flex; gap:8px; align-items:end;">
           <div style="flex:1;">
@@ -252,12 +352,21 @@
       <div id="report-content"></div>
     </div>
 
+    <div class="tab-content" id="tab-more">
+      <div class="section-heading">More</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button onclick="switchSubScreen('checkin')" style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:left;"><span style="font-size:18px;">📷</span><span style="flex:1; font-weight:700; font-size:13.5px;">Check In</span><span class="chev">›</span></button>
+        <button onclick="switchSubScreen('today')" style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:left;"><span style="font-size:18px;">📊</span><span style="flex:1; font-weight:700; font-size:13.5px;">Reports</span><span class="chev">›</span></button>
+        <button onclick="handleLogout()" style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--danger); border-radius:12px; padding:14px; text-align:left; color:var(--danger);"><span style="font-size:18px;">🚪</span><span style="flex:1; font-weight:700; font-size:13.5px;">Log Out</span></button>
+      </div>
+    </div>
+
     <div class="bottom-nav">
-      <button class="nav-btn active" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
-      <button class="nav-btn" data-tab="checkin" onclick="switchTab('checkin')"><span class="ic">📷</span><span class="lbl">Check In</span></button>
-      <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Stock</span></button>
+      <button class="nav-btn active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span><span class="lbl">Home</span></button>
+      <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Inventory</span></button>
       <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
-      <button class="nav-btn" data-tab="today" onclick="switchTab('today')"><span class="ic">📊</span><span class="lbl">Dashboard</span></button>
+      <button class="nav-btn" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
+      <button class="nav-btn" data-tab="more" onclick="switchTab('more')"><span class="ic">⋯</span><span class="lbl">More</span></button>
     </div>
   </div>
 
@@ -297,6 +406,10 @@
         <div class="field-group">
           <div class="field-group-icon"><span class="ic">👤</span><label>Customer *</label></div>
           <select id="new-order-customer" class="field-input"></select>
+        </div>
+        <div class="field-group" id="new-order-rep-group" style="display:none;">
+          <div class="field-group-icon"><span class="ic">🧑‍💼</span><label>Credit this sale to *</label></div>
+          <select id="new-order-rep" class="field-input" onchange="onOrderRepChange()"></select>
         </div>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
           <span class="field-label" style="margin:0;">Products</span>
@@ -428,7 +541,8 @@
       loadCustomers();
       loadStock();
       loadOrders();
-      loadReport();
+      loadHomeStats();
+      loadCheckInHistory();
     }).catch(err => {
       msg.innerText = isAutoLogin ? '' : ('Connection error: ' + err.message);
       btn.disabled = false; btn.innerText = 'Log In';
@@ -459,17 +573,64 @@
     document.getElementById('gate-message').innerText = '';
   }
 
+  let lastMainTab = 'home'; // remembers which BOTTOM NAV tab was active, so Back from a sub-screen returns there
   function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + tab).classList.add('active');
-    document.querySelector(`.nav-btn[data-tab="${tab}"]`).classList.add('active');
+    // checkin/today are sub-screens reached via More, not their own bottom
+    // nav button -- keep More highlighted as active for those instead of
+    // looking for a button that doesn't exist.
+    const navMatch = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+    if (navMatch) { navMatch.classList.add('active'); lastMainTab = tab; }
+    else { document.querySelector(`.nav-btn[data-tab="more"]`).classList.add('active'); }
+
+    if (tab === 'home') loadHomeStats();
+    if (tab === 'today') loadReport();
   }
+
+  function switchSubScreen(tab) { switchTab(tab); }
+  function switchSubScreenBack() { switchTab('more'); }
 
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
+  // Tracks the selected preset per screen ('cust', 'ord', 'ci') -- ALL only
+  // applies to Customers/Orders (no date restriction at all), Check-In
+  // history always starts on Today since browsing an empty history by
+  // default isn't useful.
+  const datePresetState = { cust: 'ALL', ord: 'ALL', ci: 'TODAY' };
+
+  function getDateRangeFor(prefix) {
+    const preset = datePresetState[prefix];
+    const todayD = new Date();
+    const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (preset === 'ALL') return { startDate: '', endDate: '' };
+    if (preset === 'TODAY') return { startDate: fmt(todayD), endDate: fmt(todayD) };
+    if (preset === 'YESTERDAY') {
+      const y = new Date(todayD); y.setDate(y.getDate() - 1);
+      return { startDate: fmt(y), endDate: fmt(y) };
+    }
+    if (preset === 'WEEK') {
+      const weekAgo = new Date(todayD); weekAgo.setDate(weekAgo.getDate() - 6);
+      return { startDate: fmt(weekAgo), endDate: fmt(todayD) };
+    }
+    // CUSTOM
+    return { startDate: document.getElementById(prefix + '-start-date').value, endDate: document.getElementById(prefix + '-end-date').value };
+  }
+
+  function setDatePreset(prefix, preset) {
+    datePresetState[prefix] = preset;
+    document.querySelectorAll(`#${prefix}-date-pills .filter-pill`).forEach(p => p.classList.toggle('active', p.dataset.preset === preset));
+    document.getElementById(prefix + '-custom-dates').style.display = preset === 'CUSTOM' ? 'flex' : 'none';
+    if (preset === 'CUSTOM' && !document.getElementById(prefix + '-start-date').value) return; // wait for the person to actually pick dates
+    if (prefix === 'cust') loadCustomers();
+    else if (prefix === 'ord') loadOrders();
+    else if (prefix === 'ci') loadCheckInHistory();
+  }
+
   function loadCustomers() {
-    apiCall('getCustomers').then(res => {
+    const range = getDateRangeFor('cust');
+    apiCall('getCustomers', range).then(res => {
       if (!res.success) return showToast(res.message);
       customerCache = res.data.rows;
       renderCustomers();
@@ -583,6 +744,27 @@
     }).join('');
   }
 
+  function loadCheckInHistory() {
+    const range = getDateRangeFor('ci');
+    const list = document.getElementById('checkin-history-list');
+    list.innerHTML = `<div class="empty-state"><div class="ic">⏳</div><div class="s">Loading...</div></div>`;
+    apiCall('getCheckInHistory', range).then(res => {
+      if (!res.success) return showToast(res.message);
+      if (res.rows.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="ic">📷</div><div class="t">No check-ins in this range</div></div>`;
+        return;
+      }
+      list.innerHTML = res.rows.map(r => `
+        <div class="list-card">
+          <div class="avatar" style="background:var(--brand-light); color:var(--brand); font-size:16px;">📍</div>
+          <div class="body">
+            <div class="title">${r.Customer_Name}</div>
+            <div class="sub">${r.Timestamp}${r.Sales_Rep ? ' · ' + r.Sales_Rep : ''}${r.Notes ? ' · ' + r.Notes : ''}</div>
+          </div>
+        </div>`).join('');
+    });
+  }
+
   // Tapping a shop doesn't check in immediately anymore -- a photo is
   // required first, so this just remembers WHICH shop and opens the
   // camera; the actual check-in call happens once a photo comes back.
@@ -629,6 +811,7 @@
       pendingCheckIn = null;
       if (!res.success) return showToast(res.message);
       showToast(res.message);
+      loadCheckInHistory();
     });
   }
 
@@ -725,7 +908,8 @@
   }
 
   function loadOrders() {
-    apiCall('getSalesOrders').then(res => {
+    const range = getDateRangeFor('ord');
+    apiCall('getSalesOrders', range).then(res => {
       if (!res.success) return showToast(res.message);
       rawOrdersCache = res.data.rows;
       ordersCache = groupOrdersBySO(res.data.rows);
@@ -779,22 +963,51 @@
       orderMetaCache = res.data;
       const custSelect = document.getElementById('new-order-customer');
       custSelect.innerHTML = '<option value="">Select customer...</option>' + orderMetaCache.customers.map(c => `<option value="${c.Customer_Name}">${c.Customer_Name}</option>`).join('');
-      document.getElementById('order-items').innerHTML = '';
       document.getElementById('new-order-notes').value = '';
-      addOrderItemRow();
+
+      const isAdmin = currentUser && currentUser.role === 'Admin';
+      const repGroup = document.getElementById('new-order-rep-group');
+      // Admin has no rep of their own -- every order still needs to credit
+      // a real rep for commission/reporting, so Admin has to pick one
+      // before adding any products (stock availability depends on which
+      // rep's allocation it'll actually be deducted from).
+      if (isAdmin) {
+        repGroup.style.display = '';
+        const repSelect = document.getElementById('new-order-rep');
+        repSelect.innerHTML = '<option value="">Select rep...</option>' + orderMetaCache.reps.map(r => `<option value="${r.Rep_Name}">${r.Rep_Name}</option>`).join('');
+        document.getElementById('order-items').innerHTML = `<div class="empty-state"><div class="ic">🧑‍💼</div><div class="s">Pick who to credit this sale to first</div></div>`;
+      } else {
+        repGroup.style.display = 'none';
+        document.getElementById('order-items').innerHTML = '';
+        addOrderItemRow();
+      }
       updateOrderTotal();
       document.getElementById('order-modal').classList.add('active');
     });
+  }
+
+  function onOrderRepChange() {
+    // Availability is different per rep, so any existing product rows are
+    // no longer valid against the newly selected rep -- clear and restart
+    // rather than leaving stale, possibly-wrong availability on screen.
+    document.getElementById('order-items').innerHTML = '';
+    if (document.getElementById('new-order-rep').value) addOrderItemRow();
+    updateOrderTotal();
   }
 
   function addOrderItemRow() {
     const container = document.getElementById('order-items');
     const row = document.createElement('div');
     row.className = 'order-line';
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    // Admin has no personal Rep_Stock_ column (they're not a rep) --
+    // availability is checked against whichever rep they picked to credit
+    // the sale to, since that's also where the stock will actually be
+    // deducted from.
+    const repForStock = isAdmin ? document.getElementById('new-order-rep').value : (currentUser.salesRepName || '');
     const options = orderMetaCache.inventory.map(inv => {
-      const myColumn = 'Rep_Stock_' + (currentUser.salesRepName || '');
-      const avail = Number(inv[myColumn]) || 0;
-      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 ? 'disabled' : ''}>${inv.Product_Name} (${avail} yours)</option>`;
+      const avail = Number(inv['Rep_Stock_' + repForStock]) || 0;
+      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 ? 'disabled' : ''}>${inv.Product_Name} (${avail} available)</option>`;
     }).join('');
     row.innerHTML = `
       <div class="info">
@@ -830,6 +1043,9 @@
   function submitNewOrder() {
     const customer = document.getElementById('new-order-customer').value;
     if (!customer) return showToast('Please select a customer.');
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    const selectedRep = isAdmin ? document.getElementById('new-order-rep').value : '';
+    if (isAdmin && !selectedRep) return showToast('Please pick who to credit this sale to.');
     const items = [];
     document.querySelectorAll('.order-line').forEach(row => {
       const select = row.querySelector('.order-sku');
@@ -841,13 +1057,47 @@
     });
     if (items.length === 0) return showToast('Add at least one product.');
 
-    apiCall('saveSalesOrder', { payload: { Customer_Name: customer, Order_Status: 'Confirmed', Paid_Amount: 0, items } }).then(res => {
+    const payload = { Customer_Name: customer, Order_Status: 'Confirmed', Paid_Amount: 0, items };
+    if (isAdmin) payload.Sales_Rep = selectedRep;
+
+    apiCall('saveSalesOrder', { payload }).then(res => {
       if (!res.success) return showToast(res.message);
       showToast('Order saved!');
       closeModal('order-modal');
       loadOrders();
       loadStock();
       loadReport();
+    });
+  }
+
+  function loadHomeStats() {
+    const greeting = document.getElementById('home-greeting');
+    const hour = new Date().getHours();
+    greeting.innerText = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (currentUser ? ', ' + (currentUser.role === 'Admin' ? 'Admin' : currentUser.salesRepName) : '');
+    document.getElementById('home-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
+
+    apiCall('getHomeDashboardStats').then(res => {
+      if (!res.success) return showToast(res.message);
+      document.getElementById('home-sales').innerText = '$' + res.todaySales;
+      document.getElementById('home-orders').innerText = res.todayOrders;
+      document.getElementById('home-products').innerText = res.totalProducts;
+      document.getElementById('home-lowstock').innerText = res.lowStockCount;
+      document.getElementById('home-customers').innerText = res.totalCustomers;
+
+      const list = document.getElementById('home-activity-list');
+      if (res.recentActivity.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div class="ic">📋</div><div class="t">No recent activity</div></div>`;
+        return;
+      }
+      const styleFor = t => t === 'order' ? { bg: 'var(--success-light)', color: 'var(--success)', ic: '✅' } : t === 'customer' ? { bg: 'var(--brand-light)', color: 'var(--brand)', ic: '👤' } : { bg: '#FEE2E2', color: '#DC2626', ic: '⚠️' };
+      list.innerHTML = res.recentActivity.map(a => {
+        const s = styleFor(a.type);
+        return `
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 0;">
+          <div style="width:32px; height:32px; border-radius:50%; background:${s.bg}; color:${s.color}; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">${s.ic}</div>
+          <div style="flex:1; min-width:0;"><div style="font-size:12.5px; font-weight:700;">${a.text}</div><div style="font-size:11px; color:var(--text-sub);">${a.sub}</div></div>
+        </div>`;
+      }).join('');
     });
   }
 
