@@ -216,16 +216,32 @@
         <div style="font-size:12.5px; color:var(--text-sub);" id="home-date"></div>
         <div style="font-size:12px; color:var(--text-sub); margin-top:2px;">Here's your business overview</div>
       </div>
+      <div class="filter-pills" id="home-date-pills">
+        <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('home', 'ALL')">All</button>
+        <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('home', 'TODAY')">Today</button>
+        <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('home', 'WEEK')">This week</button>
+        <button class="filter-pill" data-preset="MONTH" onclick="setDatePreset('home', 'MONTH')">This month</button>
+        <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('home', 'CUSTOM')">Custom</button>
+      </div>
+      <div id="home-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
+        <input type="date" id="home-start-date" class="field-input" style="margin-bottom:0;" onchange="loadHomeStats()">
+        <input type="date" id="home-end-date" class="field-input" style="margin-bottom:0;" onchange="loadHomeStats()">
+      </div>
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:18px;">
         <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
           <div style="width:34px; height:34px; border-radius:10px; background:var(--success-light); color:var(--success); display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">🛒</div>
           <div style="font-size:17px; font-weight:800;" id="home-sales">$0.00</div>
-          <div style="font-size:11px; color:var(--text-sub);">Today's Sales</div>
+          <div style="font-size:11px; color:var(--text-sub);">Total Sale</div>
         </div>
         <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
           <div style="width:34px; height:34px; border-radius:10px; background:var(--brand-light); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">📦</div>
           <div style="font-size:17px; font-weight:800;" id="home-orders">0</div>
-          <div style="font-size:11px; color:var(--text-sub);">Today's Orders</div>
+          <div style="font-size:11px; color:var(--text-sub);">Total Customer Order</div>
+        </div>
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
+          <div style="width:34px; height:34px; border-radius:10px; background:#EDE9FE; color:#7C3AED; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">📷</div>
+          <div style="font-size:17px; font-weight:800;" id="home-checkins">0</div>
+          <div style="font-size:11px; color:var(--text-sub);">Total Check-In</div>
         </div>
         <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
           <div style="width:34px; height:34px; border-radius:10px; background:#F3E8FF; color:#8B5CF6; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">🏷️</div>
@@ -237,7 +253,7 @@
           <div style="font-size:17px; font-weight:800;" id="home-lowstock">0</div>
           <div style="font-size:11px; color:var(--text-sub);">Low Stock</div>
         </div>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; grid-column: span 2;">
+        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
           <div style="width:34px; height:34px; border-radius:10px; background:#FEE2E2; color:#DC2626; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">👥</div>
           <div style="font-size:17px; font-weight:800;" id="home-customers">0</div>
           <div style="font-size:11px; color:var(--text-sub);">Total Customers</div>
@@ -274,8 +290,8 @@
       <div class="filter-pills" id="cust-date-pills">
         <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('cust', 'ALL')">All</button>
         <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('cust', 'TODAY')">Today</button>
-        <button class="filter-pill" data-preset="YESTERDAY" onclick="setDatePreset('cust', 'YESTERDAY')">Yesterday</button>
         <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('cust', 'WEEK')">This week</button>
+        <button class="filter-pill" data-preset="MONTH" onclick="setDatePreset('cust', 'MONTH')">This month</button>
         <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('cust', 'CUSTOM')">Custom</button>
       </div>
       <div id="cust-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
@@ -294,9 +310,10 @@
 
       <div class="section-heading" style="margin-top:20px;">Check-In History</div>
       <div class="filter-pills" id="ci-date-pills">
-        <button class="filter-pill active" data-preset="TODAY" onclick="setDatePreset('ci', 'TODAY')">Today</button>
-        <button class="filter-pill" data-preset="YESTERDAY" onclick="setDatePreset('ci', 'YESTERDAY')">Yesterday</button>
+        <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('ci', 'ALL')">All</button>
+        <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('ci', 'TODAY')">Today</button>
         <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('ci', 'WEEK')">This week</button>
+        <button class="filter-pill" data-preset="MONTH" onclick="setDatePreset('ci', 'MONTH')">This month</button>
         <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('ci', 'CUSTOM')">Custom</button>
       </div>
       <div id="ci-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
@@ -324,8 +341,8 @@
       <div class="filter-pills" id="ord-date-pills">
         <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('ord', 'ALL')">All</button>
         <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('ord', 'TODAY')">Today</button>
-        <button class="filter-pill" data-preset="YESTERDAY" onclick="setDatePreset('ord', 'YESTERDAY')">Yesterday</button>
         <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('ord', 'WEEK')">This week</button>
+        <button class="filter-pill" data-preset="MONTH" onclick="setDatePreset('ord', 'MONTH')">This month</button>
         <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('ord', 'CUSTOM')">Custom</button>
       </div>
       <div id="ord-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
@@ -595,10 +612,9 @@
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
   // Tracks the selected preset per screen ('cust', 'ord', 'ci') -- ALL only
-  // applies to Customers/Orders (no date restriction at all), Check-In
-  // history always starts on Today since browsing an empty history by
-  // default isn't useful.
-  const datePresetState = { cust: 'ALL', ord: 'ALL', ci: 'TODAY' };
+  // All four screens now share the same preset set: All/Today/This
+  // week/This month/Custom.
+  const datePresetState = { home: 'ALL', cust: 'ALL', ord: 'ALL', ci: 'ALL' };
 
   function getDateRangeFor(prefix) {
     const preset = datePresetState[prefix];
@@ -606,13 +622,13 @@
     const fmt = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     if (preset === 'ALL') return { startDate: '', endDate: '' };
     if (preset === 'TODAY') return { startDate: fmt(todayD), endDate: fmt(todayD) };
-    if (preset === 'YESTERDAY') {
-      const y = new Date(todayD); y.setDate(y.getDate() - 1);
-      return { startDate: fmt(y), endDate: fmt(y) };
-    }
     if (preset === 'WEEK') {
       const weekAgo = new Date(todayD); weekAgo.setDate(weekAgo.getDate() - 6);
       return { startDate: fmt(weekAgo), endDate: fmt(todayD) };
+    }
+    if (preset === 'MONTH') {
+      const monthStart = new Date(todayD.getFullYear(), todayD.getMonth(), 1);
+      return { startDate: fmt(monthStart), endDate: fmt(todayD) };
     }
     // CUSTOM
     return { startDate: document.getElementById(prefix + '-start-date').value, endDate: document.getElementById(prefix + '-end-date').value };
@@ -626,6 +642,7 @@
     if (prefix === 'cust') loadCustomers();
     else if (prefix === 'ord') loadOrders();
     else if (prefix === 'ci') loadCheckInHistory();
+    else if (prefix === 'home') loadHomeStats();
   }
 
   function loadCustomers() {
@@ -1076,10 +1093,12 @@
     greeting.innerText = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (currentUser ? ', ' + (currentUser.role === 'Admin' ? 'Admin' : currentUser.salesRepName) : '');
     document.getElementById('home-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
 
-    apiCall('getHomeDashboardStats').then(res => {
+    const range = getDateRangeFor('home');
+    apiCall('getHomeDashboardStats', range).then(res => {
       if (!res.success) return showToast(res.message);
-      document.getElementById('home-sales').innerText = '$' + res.todaySales;
-      document.getElementById('home-orders').innerText = res.todayOrders;
+      document.getElementById('home-sales').innerText = '$' + res.totalSales;
+      document.getElementById('home-orders').innerText = res.totalOrders;
+      document.getElementById('home-checkins').innerText = res.totalCheckIns;
       document.getElementById('home-products').innerText = res.totalProducts;
       document.getElementById('home-lowstock').innerText = res.lowStockCount;
       document.getElementById('home-customers').innerText = res.totalCustomers;
