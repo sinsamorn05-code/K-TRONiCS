@@ -392,6 +392,14 @@
       <div class="modal-header"><button class="back" onclick="closeModal('customer-modal')">‹</button><h3>Add Customer</h3></div>
       <div class="modal-body">
         <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📷</span><label>Shop Photo</label></div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <img id="new-cust-photo-preview" src="" style="display:none; width:56px; height:56px; object-fit:cover; border-radius:12px;">
+            <button type="button" class="primary-btn" style="width:auto; padding:8px 14px;" onclick="document.getElementById('new-cust-photo-input').click()">Take / Choose Photo</button>
+          </div>
+          <input type="file" id="new-cust-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handleNewCustPhotoSelected(event)">
+        </div>
+        <div class="field-group">
           <div class="field-group-icon"><span class="ic">👤</span><label>Customer Name *</label></div>
           <input type="text" id="new-cust-name" class="field-input" placeholder="Enter customer name">
         </div>
@@ -669,9 +677,12 @@
     }
     list.innerHTML = filtered.map(c => {
       const name = c.Customer_Name || 'Unnamed';
+      const avatarHtml = c.Shop_Photo_URL
+        ? `<img src="${c.Shop_Photo_URL}" class="avatar" style="object-fit:cover;">`
+        : `<div class="avatar" style="background:${avatarColorFor(name)}">${initialsFor(name)}</div>`;
       return `
       <div class="list-card" onclick="viewCustomer('${String(c.Customer_ID).replace(/'/g, "\\'")}')">
-        <div class="avatar" style="background:${avatarColorFor(name)}">${initialsFor(name)}</div>
+        ${avatarHtml}
         <div class="body">
           <div class="title">${name}</div>
           <div class="sub">${c.Contact_No || 'No phone number'}</div>
@@ -694,9 +705,12 @@
     const c = customerCache.find(x => String(x.Customer_ID) === String(customerId));
     if (!c) return showToast('Customer not found.');
     const name = c.Customer_Name || 'Unnamed';
+    const detailAvatarHtml = c.Shop_Photo_URL
+      ? `<img src="${c.Shop_Photo_URL}" style="width:64px; height:64px; margin:0 auto 10px; border-radius:20px; object-fit:cover; display:block;">`
+      : `<div class="avatar" style="width:64px; height:64px; font-size:20px; margin:0 auto 10px; border-radius:20px; background:${avatarColorFor(name)}">${initialsFor(name)}</div>`;
     document.getElementById('customer-detail-body').innerHTML = `
       <div style="text-align:center; margin-bottom:20px;">
-        <div class="avatar" style="width:64px; height:64px; font-size:20px; margin:0 auto 10px; border-radius:20px; background:${avatarColorFor(name)}">${initialsFor(name)}</div>
+        ${detailAvatarHtml}
         <div style="font-weight:800; font-size:17px;">${name}</div>
       </div>
       ${detailRow('📞', 'Phone', c.Contact_No)}
@@ -841,11 +855,28 @@
     openCustomerModal();
   }
 
+  let newCustPhotoBase64 = null;
+  function handleNewCustPhotoSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      newCustPhotoBase64 = reader.result;
+      const preview = document.getElementById('new-cust-photo-preview');
+      preview.src = newCustPhotoBase64;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
   function openCustomerModal() {
     document.getElementById('new-cust-name').value = '';
     document.getElementById('new-cust-phone').value = '';
     document.getElementById('new-cust-address').value = '';
     document.getElementById('new-cust-notes').value = '';
+    newCustPhotoBase64 = null;
+    document.getElementById('new-cust-photo-input').value = '';
+    document.getElementById('new-cust-photo-preview').style.display = 'none';
     document.getElementById('customer-modal').classList.add('active');
 
     apiCall('getLocations').then(res => {
@@ -864,13 +895,15 @@
     const name = document.getElementById('new-cust-name').value.trim();
     const phone = document.getElementById('new-cust-phone').value.trim();
     if (!name || !phone) return showToast('Name and phone number are required.');
-    apiCall('saveCustomer', { payload: {
+    const payload = {
       Customer_Name: name,
       Contact_No: phone,
       Address: document.getElementById('new-cust-address').value.trim(),
       Location: document.getElementById('new-cust-location').value,
       Notes: document.getElementById('new-cust-notes').value.trim()
-    } }).then(res => {
+    };
+    if (newCustPhotoBase64) payload.Shop_Photo_Base64 = newCustPhotoBase64;
+    apiCall('saveCustomer', { payload }).then(res => {
       if (!res.success) return showToast(res.message);
       closeModal('customer-modal');
       loadCustomers();
