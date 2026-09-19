@@ -433,13 +433,13 @@
     <div class="modal-sheet">
       <div class="modal-header"><button class="back" onclick="closeModal('order-modal')">‹</button><h3 id="order-modal-title">New Order</h3></div>
       <div class="modal-body">
-        <div class="field-group">
-          <div class="field-group-icon"><span class="ic">👤</span><label>Customer *</label></div>
-          <select id="new-order-customer" class="field-input"></select>
-        </div>
         <div class="field-group" id="new-order-rep-group" style="display:none;">
           <div class="field-group-icon"><span class="ic">🧑‍💼</span><label>Credit this sale to *</label></div>
           <select id="new-order-rep" class="field-input" onchange="onOrderRepChange()"></select>
+        </div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">👤</span><label>Customer *</label></div>
+          <select id="new-order-customer" class="field-input"></select>
         </div>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
           <span class="field-label" style="margin:0;">Products</span>
@@ -1117,12 +1117,53 @@
   let editingOrderPaidAmount = 0;
   let editingOrderDueDate = '';
 
+  // Stock Source options for Admin's per-line dropdown -- 'Main Stock' plus
+  // every rep who has their own allocation column, fetched fresh each time
+  // the order modal opens (same data source as the web app's equivalent).
+  let soStockSourceOptions = ['Main Stock'];
+
+  // Re-populates the Customer dropdown. For Admin, filtered down to only
+  // the selected rep's own customers (matching the web app's
+  // filterSOCustomerDropdown) -- with no rep picked yet, the dropdown is
+  // disabled and empty rather than showing every customer in the business.
+  // For a regular rep, the list is already scoped to their own customers
+  // server-side, so no client-side filtering is needed here.
+  function refreshOrderCustomerOptions(repName, keepCustomer) {
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    const custSelect = document.getElementById('new-order-customer');
+    const previousValue = keepCustomer || custSelect.value;
+
+    if (isAdmin && !repName) {
+      custSelect.innerHTML = '<option value="">Select a rep first...</option>';
+      custSelect.disabled = true;
+      return;
+    }
+    custSelect.disabled = false;
+
+    const filtered = orderMetaCache.customers.filter(c =>
+      !isAdmin || !repName || String(c.Sales_Rep || '').trim().toLowerCase() === String(repName).trim().toLowerCase());
+    custSelect.innerHTML = '<option value="">Select customer...</option>' + filtered.map(c => `<option value="${c.Customer_Name}">${c.Customer_Name}</option>`).join('');
+
+    if (previousValue) {
+      if (!filtered.some(c => c.Customer_Name === previousValue)) {
+        // This order's existing customer may have been reassigned to a
+        // different rep since -- keep them visible rather than silently
+        // clearing the field (same as the web app).
+        custSelect.innerHTML += `<option value="${previousValue}">${previousValue} (different rep)</option>`;
+      }
+      custSelect.value = previousValue;
+    }
+  }
+
   function openOrderModal(soNumber = null) {
-    apiCall('getSalesOrderMetaData').then(res => {
+    const isAdminEarly = currentUser && currentUser.role === 'Admin';
+    Promise.all([
+      apiCall('getSalesOrderMetaData'),
+      isAdminEarly ? apiCall('listRepStockColumns') : Promise.resolve({ success: true, repNames: [] })
+    ]).then(([res, stockRes]) => {
       if (!res.success) return showToast('Could not load order data.');
       orderMetaCache = res.data;
-      const custSelect = document.getElementById('new-order-customer');
-      custSelect.innerHTML = '<option value="">Select customer...</option>' + orderMetaCache.customers.map(c => `<option value="${c.Customer_Name}">${c.Customer_Name}</option>`).join('');
+      soStockSourceOptions = ['Main Stock', ...(stockRes.success ? stockRes.repNames : [])];
       document.getElementById('new-order-notes').value = '';
 
       const isAdmin = currentUser && currentUser.role === 'Admin';
@@ -1143,7 +1184,6 @@
         if (lines.length === 0) { showToast('Order not found.'); return; }
         const first = lines[0];
         titleEl.innerText = 'Edit Order — ' + soNumber;
-        custSelect.value = first.Customer_Name;
         editingOrderStatus = first.Order_Status || 'Confirmed';
         editingOrderPaidAmount = Number(first.Paid_Amount) || 0;
         editingOrderDueDate = first.Due_Date || '';
@@ -1155,25 +1195,28 @@
           repGroup.style.display = '';
           repSelect.innerHTML = '<option value="">Select rep...</option>' + orderMetaCache.reps.map(r => `<option value="${r.Rep_Name}">${r.Rep_Name}</option>`).join('');
           repSelect.value = first.Sales_Rep || '';
+          refreshOrderCustomerOptions(first.Sales_Rep, first.Customer_Name);
         } else {
           repGroup.style.display = 'none';
+          refreshOrderCustomerOptions(null, first.Customer_Name);
         }
 
         document.getElementById('order-items').innerHTML = '';
-        lines.forEach(l => addOrderItemRow({ sku: l.SKU, qty: Number(l.Quantity) || 1, price: Number(l.Unit_Price) || 0 }));
+        lines.forEach(l => addOrderItemRow({ sku: l.SKU, qty: Number(l.Quantity) || 1, price: Number(l.Unit_Price) || 0, stockSource: l.Stock_Source || '' }));
       } else {
         titleEl.innerText = 'New Order';
         // Admin has no rep of their own -- every order still needs to credit
         // a real rep for commission/reporting, so Admin has to pick one
-        // before adding any products (stock availability depends on which
-        // rep's allocation it'll actually be deducted from).
+        // before adding any products or seeing that rep's customers.
         if (isAdmin) {
           repGroup.style.display = '';
           repSelect.innerHTML = '<option value="">Select rep...</option>' + orderMetaCache.reps.map(r => `<option value="${r.Rep_Name}">${r.Rep_Name}</option>`).join('');
           repSelect.value = '';
+          refreshOrderCustomerOptions(null);
           document.getElementById('order-items').innerHTML = `<div class="empty-state"><div class="ic">🧑‍💼</div><div class="s">Pick who to credit this sale to first</div></div>`;
         } else {
           repGroup.style.display = 'none';
+          refreshOrderCustomerOptions(null);
           document.getElementById('order-items').innerHTML = '';
           addOrderItemRow();
         }
@@ -1190,9 +1233,11 @@
     // (Switching rep mid-edit also means this order's own items no longer
     // belong to the previous rep's allocation, so the add-back adjustment
     // wouldn't apply correctly anyway -- starting fresh is the safe choice.)
+    const selectedRep = document.getElementById('new-order-rep').value;
     editingOrderQtyBySku = {};
+    refreshOrderCustomerOptions(selectedRep);
     document.getElementById('order-items').innerHTML = '';
-    if (document.getElementById('new-order-rep').value) addOrderItemRow();
+    if (selectedRep) addOrderItemRow();
     updateOrderTotal();
   }
 
@@ -1201,17 +1246,32 @@
     const row = document.createElement('div');
     row.className = 'order-line';
     const isAdmin = currentUser && currentUser.role === 'Admin';
-    // Admin has no personal Rep_Stock_ column (they're not a rep) --
-    // availability is checked against whichever rep they picked to credit
-    // the sale to, since that's also where the stock will actually be
-    // deducted from.
+    // Admin can sell from ANY stock source (Main Stock or any rep's own
+    // allocation), same as the web app -- so the product list shows the
+    // company-wide total here, and the actual source to deduct from is
+    // chosen per line via the Stock Source dropdown below. A regular rep
+    // still has a hard limit to only their own allocation, matching the
+    // backend's enforced rule for them.
     const repForStock = isAdmin ? document.getElementById('new-order-rep').value : (currentUser.salesRepName || '');
     const options = orderMetaCache.inventory.map(inv => {
-      let avail = Number(inv['Rep_Stock_' + repForStock]) || 0;
+      let avail = isAdmin ? (Number(inv.Total_Available_Stock) || 0) : (Number(inv['Rep_Stock_' + repForStock]) || 0);
       if (editingOrderQtyBySku[inv.SKU]) avail += editingOrderQtyBySku[inv.SKU];
       const isSelected = prefill && prefill.sku === inv.SKU;
-      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 && !isSelected ? 'disabled' : ''} ${isSelected ? 'selected' : ''}>${inv.Product_Name} (${avail} available)</option>`;
+      return `<option value="${inv.SKU}" data-name="${inv.Product_Name}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 && !isSelected ? 'disabled' : ''} ${isSelected ? 'selected' : ''}>${inv.Product_Name} (${avail} available)</option>`;
     }).join('');
+
+    // Stock Source defaults to "same as the rep credited on the order"
+    // (blank -- resolved server-side) but can be overridden per line, e.g.
+    // that rep doesn't have enough of THIS particular SKU but Main Stock or
+    // another rep does. Admin only -- a rep is always limited to their own
+    // stock, so there's no source to pick.
+    let sourceSelectHtml = '';
+    if (isAdmin) {
+      const currentSource = prefill ? (prefill.stockSource || '') : '';
+      const sourceOptionsHtml = soStockSourceOptions.map(loc => `<option value="${loc}" ${loc === currentSource ? 'selected' : ''}>${loc}</option>`).join('');
+      sourceSelectHtml = `<select class="order-stock-source field-input" style="margin-top:6px; font-size:12px; padding:6px;"><option value="">(Same as rep credited)</option>${sourceOptionsHtml}</select>`;
+    }
+
     row.innerHTML = `
       <div class="info">
         <select class="order-sku" style="width:100%; margin-bottom:6px;" onchange="onOrderProductChange(this)"><option value="">Select product...</option>${options}</select>
@@ -1219,6 +1279,7 @@
           <input type="number" class="order-qty" min="1" value="${prefill ? prefill.qty : 1}" style="width:60px;" oninput="updateOrderTotal()">
           <input type="number" class="order-price" step="0.01" value="${prefill ? prefill.price : 0}" style="width:80px;" oninput="updateOrderTotal()">
         </div>
+        ${sourceSelectHtml}
       </div>
       <button class="del" onclick="this.closest('.order-line').remove(); updateOrderTotal();">✕</button>`;
     container.appendChild(row);
@@ -1253,10 +1314,12 @@
     document.querySelectorAll('.order-line').forEach(row => {
       const select = row.querySelector('.order-sku');
       const sku = select.value;
-      const productName = select.options[select.selectedIndex].text;
+      const productName = select.options[select.selectedIndex].getAttribute('data-name') || '';
       const qty = Number(row.querySelector('.order-qty').value);
       const price = Number(row.querySelector('.order-price').value);
-      if (sku && qty > 0) items.push({ sku, product_name: productName, qty, price });
+      const sourceSelect = row.querySelector('.order-stock-source');
+      const stockSource = sourceSelect ? sourceSelect.value : ''; // blank = use the order's own Sales_Rep
+      if (sku && qty > 0) items.push({ sku, product_name: productName, qty, price, stockSource });
     });
     if (items.length === 0) return showToast('Add at least one product.');
 
