@@ -431,7 +431,7 @@
 
   <div class="modal-overlay" id="order-modal">
     <div class="modal-sheet">
-      <div class="modal-header"><button class="back" onclick="closeModal('order-modal')">‹</button><h3>New Order</h3></div>
+      <div class="modal-header"><button class="back" onclick="closeModal('order-modal')">‹</button><h3 id="order-modal-title">New Order</h3></div>
       <div class="modal-body">
         <div class="field-group">
           <div class="field-group-icon"><span class="ic">👤</span><label>Customer *</label></div>
@@ -464,7 +464,7 @@
     </div>
   </div>
 
-  <!-- ORDER DETAIL (view-only, no delete) -->
+  <!-- ORDER DETAIL (view for reps; Admin also gets edit/status/mark-paid/delete, rendered inline by viewOrder()) -->
   <div class="modal-overlay" id="order-detail-modal">
     <div class="modal-sheet">
       <div class="modal-header"><button class="back" onclick="closeModal('order-detail-modal')">‹</button><h3>Order Details</h3></div>
@@ -735,6 +735,28 @@
     const first = lines[0];
     const total = lines.reduce((sum, r) => sum + (Number(r.Total_Amount) || 0), 0);
     const badgeClass = first.Order_Status === 'Confirmed' ? 'confirmed' : (first.Order_Status === 'Cancelled' ? 'cancelled' : 'pending');
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    const balanceDue = Number(first.Balance_Due) || 0;
+
+    // Full order management (edit/status/mark-paid/delete) is Admin-only
+    // here, matching the web app's own permission for these actions -- reps
+    // still only ever view their own orders from this screen.
+    const adminControlsHtml = !isAdmin ? '' : `
+      <div class="section-heading" style="margin-top:18px;">Manage Order</div>
+      <div class="field-group">
+        <div class="field-group-icon"><span class="ic">🔄</span><label>Order Status</label></div>
+        <select class="field-input" onchange="changeOrderStatusFromDetail('${soNumber}', this.value)">
+          <option value="Draft" ${first.Order_Status === 'Draft' ? 'selected' : ''}>Draft</option>
+          <option value="Confirmed" ${first.Order_Status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+          <option value="Cancelled" ${first.Order_Status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+        </select>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="primary-btn" style="flex:1;" onclick="closeModal('order-detail-modal'); openOrderModal('${soNumber}');">✏️ Edit</button>
+        ${balanceDue > 0.004 ? `<button class="primary-btn" style="flex:1;" onclick="markOrderPaidFromDetail('${soNumber}')">💰 Mark Paid</button>` : ''}
+      </div>
+      <button class="primary-btn" style="margin-top:8px; background:#dc2626;" onclick="deleteOrderFromDetail('${soNumber}')">🗑️ Delete Order</button>
+    `;
 
     document.getElementById('order-detail-body').innerHTML = `
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
@@ -754,8 +776,39 @@
           <div style="font-weight:700;">$${(Number(l.Quantity) * Number(l.Unit_Price)).toFixed(2)}</div>
         </div>`).join('')}
       <div class="totals-box"><div class="row total"><span>Total</span><span>$${total.toFixed(2)}</span></div></div>
+      ${adminControlsHtml}
     `;
     document.getElementById('order-detail-modal').classList.add('active');
+  }
+
+  function changeOrderStatusFromDetail(soNumber, newStatus) {
+    apiCall('updateOrderStatus', { payload: { soNumber, newStatus } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast('Status updated!');
+      closeModal('order-detail-modal');
+      loadOrders();
+      loadStock();
+    });
+  }
+
+  function markOrderPaidFromDetail(soNumber) {
+    apiCall('updatePaymentStatus', { payload: { soNumber, newStatus: 'Paid' } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast('Marked as paid!');
+      closeModal('order-detail-modal');
+      loadOrders();
+    });
+  }
+
+  function deleteOrderFromDetail(soNumber) {
+    if (!confirm(`Delete order ${soNumber}? This cannot be undone.`)) return;
+    apiCall('deleteSalesOrder', { payload: { soNumber } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast('Order deleted.');
+      closeModal('order-detail-modal');
+      loadOrders();
+      loadStock();
+    });
   }
 
   // ---- CHECK IN ----
@@ -973,6 +1026,7 @@
       list.innerHTML = `<div class="empty-state"><div class="ic">📦</div><div class="t">No stock allocated to you</div><div class="s">Ask your admin to transfer some stock to you</div></div>`;
       return;
     }
+    const isAdmin = currentUser && currentUser.role === 'Admin';
     list.innerHTML = filtered.map(i => `
       <div class="list-card">
         <div class="avatar" style="background:#EEF2FF; color:var(--brand); font-size:18px;">📦</div>
@@ -980,8 +1034,23 @@
           <div class="title">${i.Product_Name}</div>
           <div class="sub">Stock: ${i.MyStock} · $${Number(i.Unit_Price).toFixed(2)}</div>
         </div>
-        <span class="chev">›</span>
+        ${isAdmin ? `<button onclick="promptAdjustStockMini('${i.SKU}', '${String(i.Product_Name).replace(/'/g, "\\'")}')" style="background:var(--brand-light); color:var(--brand); border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:700; white-space:nowrap;">🔢 Adjust</button>` : `<span class="chev">›</span>`}
       </div>`).join('');
+  }
+
+  // Same adjustment the web app's Inventory tab already offers (add or
+  // remove a quantity from the company-wide Total_Available_Stock, with an
+  // optional reason logged to Stock_Movements) -- Admin-only, backend-
+  // enforced, mirrored here for the field.
+  function promptAdjustStockMini(sku, productName) {
+    const qty = prompt(`Adjust stock for ${productName} (${sku}):\n\nEnter a positive number to add stock, or negative to remove it (e.g. -5).`);
+    if (qty === null || qty === '' || isNaN(qty) || Number(qty) === 0) return;
+    const reason = prompt('Reason for this adjustment (optional):') || '';
+    apiCall('adjustStock', { payload: { sku, quantityChange: Number(qty), reason } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast(res.message);
+      loadStock();
+    });
   }
 
   function loadOrders() {
@@ -1034,7 +1103,21 @@
     }).join('');
   }
 
-  function openOrderModal() {
+  // Set only while the order modal is open for EDITING an existing order
+  // (null means "new order"). editingOrderQtyBySku holds that order's own
+  // already-deducted quantity per SKU, added back to displayed availability
+  // so editing an order never looks blocked by its own stock -- the backend
+  // re-validates for real on save regardless, so this is purely a display
+  // nicety, never a safety gap. editingOrderStatus/Paid/DueDate carry
+  // forward values saveSalesOrder doesn't auto-preserve on its own (unlike
+  // Balance_Paid_Amount, which the backend re-reads from the sheet itself).
+  let editingOrderSoNumber = null;
+  let editingOrderQtyBySku = {};
+  let editingOrderStatus = 'Confirmed';
+  let editingOrderPaidAmount = 0;
+  let editingOrderDueDate = '';
+
+  function openOrderModal(soNumber = null) {
     apiCall('getSalesOrderMetaData').then(res => {
       if (!res.success) return showToast('Could not load order data.');
       orderMetaCache = res.data;
@@ -1044,19 +1127,56 @@
 
       const isAdmin = currentUser && currentUser.role === 'Admin';
       const repGroup = document.getElementById('new-order-rep-group');
-      // Admin has no rep of their own -- every order still needs to credit
-      // a real rep for commission/reporting, so Admin has to pick one
-      // before adding any products (stock availability depends on which
-      // rep's allocation it'll actually be deducted from).
-      if (isAdmin) {
-        repGroup.style.display = '';
-        const repSelect = document.getElementById('new-order-rep');
-        repSelect.innerHTML = '<option value="">Select rep...</option>' + orderMetaCache.reps.map(r => `<option value="${r.Rep_Name}">${r.Rep_Name}</option>`).join('');
-        document.getElementById('order-items').innerHTML = `<div class="empty-state"><div class="ic">🧑‍💼</div><div class="s">Pick who to credit this sale to first</div></div>`;
-      } else {
-        repGroup.style.display = 'none';
+      const repSelect = document.getElementById('new-order-rep');
+      const titleEl = document.getElementById('order-modal-title');
+
+      editingOrderSoNumber = soNumber;
+      editingOrderQtyBySku = {};
+      editingOrderStatus = 'Confirmed';
+      editingOrderPaidAmount = 0;
+      editingOrderDueDate = '';
+
+      if (soNumber) {
+        // Editing an existing order (Admin only -- see the Order Detail
+        // screen's Edit button) -- prefill everything from its current lines.
+        const lines = rawOrdersCache.filter(r => r.SO_Number === soNumber);
+        if (lines.length === 0) { showToast('Order not found.'); return; }
+        const first = lines[0];
+        titleEl.innerText = 'Edit Order — ' + soNumber;
+        custSelect.value = first.Customer_Name;
+        editingOrderStatus = first.Order_Status || 'Confirmed';
+        editingOrderPaidAmount = Number(first.Paid_Amount) || 0;
+        editingOrderDueDate = first.Due_Date || '';
+        lines.forEach(l => {
+          if (l.SKU) editingOrderQtyBySku[l.SKU] = (editingOrderQtyBySku[l.SKU] || 0) + (Number(l.Quantity) || 0);
+        });
+
+        if (isAdmin) {
+          repGroup.style.display = '';
+          repSelect.innerHTML = '<option value="">Select rep...</option>' + orderMetaCache.reps.map(r => `<option value="${r.Rep_Name}">${r.Rep_Name}</option>`).join('');
+          repSelect.value = first.Sales_Rep || '';
+        } else {
+          repGroup.style.display = 'none';
+        }
+
         document.getElementById('order-items').innerHTML = '';
-        addOrderItemRow();
+        lines.forEach(l => addOrderItemRow({ sku: l.SKU, qty: Number(l.Quantity) || 1, price: Number(l.Unit_Price) || 0 }));
+      } else {
+        titleEl.innerText = 'New Order';
+        // Admin has no rep of their own -- every order still needs to credit
+        // a real rep for commission/reporting, so Admin has to pick one
+        // before adding any products (stock availability depends on which
+        // rep's allocation it'll actually be deducted from).
+        if (isAdmin) {
+          repGroup.style.display = '';
+          repSelect.innerHTML = '<option value="">Select rep...</option>' + orderMetaCache.reps.map(r => `<option value="${r.Rep_Name}">${r.Rep_Name}</option>`).join('');
+          repSelect.value = '';
+          document.getElementById('order-items').innerHTML = `<div class="empty-state"><div class="ic">🧑‍💼</div><div class="s">Pick who to credit this sale to first</div></div>`;
+        } else {
+          repGroup.style.display = 'none';
+          document.getElementById('order-items').innerHTML = '';
+          addOrderItemRow();
+        }
       }
       updateOrderTotal();
       document.getElementById('order-modal').classList.add('active');
@@ -1067,12 +1187,16 @@
     // Availability is different per rep, so any existing product rows are
     // no longer valid against the newly selected rep -- clear and restart
     // rather than leaving stale, possibly-wrong availability on screen.
+    // (Switching rep mid-edit also means this order's own items no longer
+    // belong to the previous rep's allocation, so the add-back adjustment
+    // wouldn't apply correctly anyway -- starting fresh is the safe choice.)
+    editingOrderQtyBySku = {};
     document.getElementById('order-items').innerHTML = '';
     if (document.getElementById('new-order-rep').value) addOrderItemRow();
     updateOrderTotal();
   }
 
-  function addOrderItemRow() {
+  function addOrderItemRow(prefill) {
     const container = document.getElementById('order-items');
     const row = document.createElement('div');
     row.className = 'order-line';
@@ -1083,15 +1207,17 @@
     // deducted from.
     const repForStock = isAdmin ? document.getElementById('new-order-rep').value : (currentUser.salesRepName || '');
     const options = orderMetaCache.inventory.map(inv => {
-      const avail = Number(inv['Rep_Stock_' + repForStock]) || 0;
-      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 ? 'disabled' : ''}>${inv.Product_Name} (${avail} available)</option>`;
+      let avail = Number(inv['Rep_Stock_' + repForStock]) || 0;
+      if (editingOrderQtyBySku[inv.SKU]) avail += editingOrderQtyBySku[inv.SKU];
+      const isSelected = prefill && prefill.sku === inv.SKU;
+      return `<option value="${inv.SKU}" data-price="${inv.Unit_Price}" data-available="${avail}" ${avail <= 0 && !isSelected ? 'disabled' : ''} ${isSelected ? 'selected' : ''}>${inv.Product_Name} (${avail} available)</option>`;
     }).join('');
     row.innerHTML = `
       <div class="info">
         <select class="order-sku" style="width:100%; margin-bottom:6px;" onchange="onOrderProductChange(this)"><option value="">Select product...</option>${options}</select>
         <div style="display:flex; gap:6px;">
-          <input type="number" class="order-qty" min="1" value="1" style="width:60px;" oninput="updateOrderTotal()">
-          <input type="number" class="order-price" step="0.01" value="0" style="width:80px;" oninput="updateOrderTotal()">
+          <input type="number" class="order-qty" min="1" value="${prefill ? prefill.qty : 1}" style="width:60px;" oninput="updateOrderTotal()">
+          <input type="number" class="order-price" step="0.01" value="${prefill ? prefill.price : 0}" style="width:80px;" oninput="updateOrderTotal()">
         </div>
       </div>
       <button class="del" onclick="this.closest('.order-line').remove(); updateOrderTotal();">✕</button>`;
@@ -1134,12 +1260,28 @@
     });
     if (items.length === 0) return showToast('Add at least one product.');
 
-    const payload = { Customer_Name: customer, Order_Status: 'Confirmed', Paid_Amount: 0, items };
+    const payload = {
+      Customer_Name: customer,
+      // A brand-new order always starts Confirmed; an edit keeps whatever
+      // status the order already had -- status changes go through the
+      // dedicated Change Status action on the Order Detail screen instead,
+      // never silently through this form.
+      Order_Status: editingOrderSoNumber ? editingOrderStatus : 'Confirmed',
+      // Paid_Amount isn't auto-preserved by the backend the way
+      // Balance_Paid_Amount is, so an edit must explicitly carry it forward
+      // or a prior payment would silently reset to $0.
+      Paid_Amount: editingOrderSoNumber ? editingOrderPaidAmount : 0,
+      items
+    };
+    if (editingOrderSoNumber) {
+      payload.SO_Number = editingOrderSoNumber;
+      payload.Due_Date = editingOrderDueDate;
+    }
     if (isAdmin) payload.Sales_Rep = selectedRep;
 
     apiCall('saveSalesOrder', { payload }).then(res => {
       if (!res.success) return showToast(res.message);
-      showToast('Order saved!');
+      showToast(editingOrderSoNumber ? 'Order updated!' : 'Order saved!');
       closeModal('order-modal');
       loadOrders();
       loadStock();
