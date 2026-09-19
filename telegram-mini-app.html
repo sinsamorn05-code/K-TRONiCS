@@ -416,6 +416,11 @@
           <select id="new-cust-location" class="field-input"><option value="">Select location...</option></select>
         </div>
         <div class="field-group">
+          <div class="field-group-icon"><span class="ic">🗺️</span><label>Google Map Link</label></div>
+          <input type="url" id="new-cust-gmap" class="field-input" placeholder="Paste a Google Maps link">
+          <button type="button" class="primary-btn" style="width:auto; padding:8px 14px; margin-top:8px;" onclick="useCurrentLocationForCustomer()">📍 Use My Current Location</button>
+        </div>
+        <div class="field-group">
           <div class="field-group-icon"><span class="ic">📝</span><label>Notes</label></div>
           <textarea id="new-cust-notes" class="field-input" rows="3" placeholder="Additional notes..."></textarea>
         </div>
@@ -719,6 +724,7 @@
       ${detailRow('🗺️', 'Location', c.Location)}
       ${detailRow('👤', 'Sales Rep', c.Sales_Rep)}
       ${detailRow('✅', 'Status', c.Status)}
+      ${c.Google_Map ? `<button class="primary-btn" style="margin-top:6px;" onclick="window.open('${c.Google_Map}', '_blank')">📍 Open in Google Maps</button>` : ''}
     `;
     document.getElementById('customer-detail-modal').classList.add('active');
   }
@@ -869,11 +875,31 @@
     reader.readAsDataURL(file);
   }
 
+  // Turns the rep's live GPS position into a pasteable Google Maps link --
+  // same coordinate source the check-in feature already uses, just handed
+  // to the customer's own Google_Map field instead of a one-off visit log.
+  // Never blocks the form if location is denied/unavailable -- the field
+  // simply stays empty and can still be filled in by hand.
+  function useCurrentLocationForCustomer() {
+    if (!navigator.geolocation) return showToast('Location isn\'t available on this device.');
+    showToast('Getting your location...');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude, lng = pos.coords.longitude;
+        document.getElementById('new-cust-gmap').value = `https://maps.google.com/?q=${lat},${lng}`;
+        showToast('Location set!');
+      },
+      () => showToast('Could not get your location -- paste a map link manually instead.'),
+      { timeout: 8000 }
+    );
+  }
+
   function openCustomerModal() {
     document.getElementById('new-cust-name').value = '';
     document.getElementById('new-cust-phone').value = '';
     document.getElementById('new-cust-address').value = '';
     document.getElementById('new-cust-notes').value = '';
+    document.getElementById('new-cust-gmap').value = '';
     newCustPhotoBase64 = null;
     document.getElementById('new-cust-photo-input').value = '';
     document.getElementById('new-cust-photo-preview').style.display = 'none';
@@ -900,6 +926,7 @@
       Contact_No: phone,
       Address: document.getElementById('new-cust-address').value.trim(),
       Location: document.getElementById('new-cust-location').value,
+      Google_Map: document.getElementById('new-cust-gmap').value.trim(),
       Notes: document.getElementById('new-cust-notes').value.trim()
     };
     if (newCustPhotoBase64) payload.Shop_Photo_Base64 = newCustPhotoBase64;
