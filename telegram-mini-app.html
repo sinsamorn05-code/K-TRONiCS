@@ -270,7 +270,7 @@
           <div style="width:48px; height:48px; border-radius:50%; background:var(--success); color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">👤</div>
           <div style="font-size:10.5px; font-weight:700;">Add Customer</div>
         </button>
-        <button onclick="startCheckIn()" style="background:none; border:none; text-align:center;">
+        <button onclick="openCheckInTab()" style="background:none; border:none; text-align:center;">
           <div style="width:48px; height:48px; border-radius:50%; background:#8B5CF6; color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">📷</div>
           <div style="font-size:10.5px; font-weight:700;">Check In</div>
         </button>
@@ -302,15 +302,64 @@
     </div>
 
     <div class="tab-content" id="tab-checkin">
-      <div id="checkin-picker-section">
+      <div id="checkin-dashboard-section">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div style="font-size:18px; font-weight:800;">Shop Visit</div>
+          <button onclick="openNewVisitOptions()" style="background:var(--brand); color:#fff; border:none; border-radius:10px; padding:9px 14px; font-weight:700; font-size:12.5px;">➕ New Visit</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:18px;">
+          <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
+            <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Today</div>
+            <div style="font-size:20px; font-weight:800; color:var(--brand);" id="visit-stat-today">0</div>
+            <div style="font-size:10px; color:var(--text-sub);">Visits</div>
+          </div>
+          <div style="background:var(--success-light); border-radius:12px; padding:12px; text-align:center;">
+            <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Week</div>
+            <div style="font-size:20px; font-weight:800; color:var(--success);" id="visit-stat-week">0</div>
+            <div style="font-size:10px; color:var(--text-sub);">Visits</div>
+          </div>
+          <div style="background:var(--warning-light); border-radius:12px; padding:12px; text-align:center;">
+            <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Month</div>
+            <div style="font-size:20px; font-weight:800; color:#B45309;" id="visit-stat-month">0</div>
+            <div style="font-size:10px; color:var(--text-sub);">Visits</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:18px;">
+          <div onclick="openVisitListModal('plan')" style="background:#EEF2FF; border-radius:12px; padding:12px; text-align:center; cursor:pointer;">
+            <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Plan To Visit</div>
+            <div style="font-size:20px; font-weight:800; color:#4F46E5;" id="visit-stat-plan">0</div>
+            <div style="font-size:10px; color:var(--text-sub);">🗓️ Pending</div>
+          </div>
+          <div onclick="openVisitListModal('need')" style="background:#FEF2F2; border-radius:12px; padding:12px; text-align:center; cursor:pointer;">
+            <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Need To Visit</div>
+            <div style="font-size:20px; font-weight:800; color:var(--danger);" id="visit-stat-need">0</div>
+            <div style="font-size:10px; color:var(--text-sub);">20+ days</div>
+          </div>
+          <div onclick="openVisitListModal('never')" style="background:#F3F4F6; border-radius:12px; padding:12px; text-align:center; cursor:pointer;">
+            <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Never Visit</div>
+            <div style="font-size:20px; font-weight:800; color:#6B7280;" id="visit-stat-never">0</div>
+            <div style="font-size:10px; color:var(--text-sub);">shops</div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <div class="section-heading" style="margin:0;">Recent Visits</div>
+          <button onclick="scrollToCheckInHistory()" style="background:none; border:none; color:var(--brand); font-weight:700; font-size:12.5px;">View All</button>
+        </div>
+        <div id="recent-visits-list"></div>
+      </div>
+
+      <div id="checkin-picker-section" style="display:none;">
         <button onclick="cancelPendingCheckIn()" style="background:none; border:none; color:var(--danger); font-weight:700; font-size:13px; margin-bottom:10px;">✕ Cancel Check-In</button>
-        <div style="font-size:11.5px; color:var(--success); margin-bottom:10px;">📸 Photo captured — now select which shop this visit was to:</div>
+        <div style="font-size:11.5px; color:var(--success); margin-bottom:10px;" id="checkin-picker-hint">📸 Photo captured — now select which shop this visit was to:</div>
         <div class="search-bar"><span class="ic">🔍</span><input type="text" id="checkin-search" placeholder="Search your shops..." oninput="renderCheckInList()"></div>
         <button class="add-btn-full" style="background:var(--brand-light); color:var(--brand);" onclick="openNewShopFromCheckIn()">➕ Shop not listed? Add New Shop</button>
         <div id="checkin-list"></div>
       </div>
 
-      <div class="section-heading" style="margin-top:20px;">Check-In History</div>
+      <div id="checkin-history-anchor" class="section-heading" style="margin-top:20px;">Check-In History</div>
       <div class="filter-pills" id="ci-date-pills">
         <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('ci', 'ALL')">All</button>
         <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('ci', 'TODAY')">Today</button>
@@ -376,7 +425,7 @@
       <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Inventory</span></button>
       <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
       <button class="nav-btn" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
-      <button class="nav-btn" data-tab="checkin" onclick="startCheckIn()"><span class="ic">📷</span><span class="lbl">Check In</span></button>
+      <button class="nav-btn" data-tab="checkin" onclick="openCheckInTab()"><span class="ic">📷</span><span class="lbl">Check In</span></button>
     </div>
   </div>
 
@@ -466,6 +515,35 @@
   </div>
 
   <!-- CHECK IN -->
+  <div class="modal-overlay" id="new-visit-modal">
+    <div class="modal-sheet">
+      <div class="modal-header"><button class="back" onclick="closeModal('new-visit-modal')">‹</button><h3>New Visit</h3></div>
+      <div class="modal-body">
+        <button onclick="closeModal('new-visit-modal'); startCheckIn();" style="display:flex; align-items:center; gap:12px; width:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:left; margin-bottom:10px;">
+          <span style="font-size:22px;">📷</span>
+          <span style="flex:1;">
+            <div style="font-weight:700; font-size:14px;">Check In Now</div>
+            <div style="font-size:11.5px; color:var(--text-sub); margin-top:2px;">Take a photo now and log the visit as done</div>
+          </span>
+        </button>
+        <button onclick="closeModal('new-visit-modal'); openPlanVisitPicker();" style="display:flex; align-items:center; gap:12px; width:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; text-align:left;">
+          <span style="font-size:22px;">🗓️</span>
+          <span style="flex:1;">
+            <div style="font-weight:700; font-size:14px;">Plan a Visit for Later</div>
+            <div style="font-size:11.5px; color:var(--text-sub); margin-top:2px;">Add a shop to visit soon -- shows as Pending until you check in</div>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="visit-list-modal">
+    <div class="modal-sheet">
+      <div class="modal-header"><button class="back" onclick="closeModal('visit-list-modal')">‹</button><h3 id="visit-list-modal-title">Visits</h3></div>
+      <div class="modal-body" id="visit-list-modal-body"></div>
+    </div>
+  </div>
+
   <input type="file" id="checkin-photo-input" accept="image/*" capture="environment" style="display:none;" onchange="handleCheckInPhotoSelected(event)">
 
   <div class="toast" id="toast"></div>
@@ -806,20 +884,162 @@
     });
   }
 
-  // ---- CHECK IN ----
-  // New order: rep taps Check In, camera opens immediately, THEN they pick
-  // which shop the photo was of (search list, same data as before) -- not
-  // the other way around. pendingCheckInPhoto holds the photo between those
-  // two steps; checkInPendingAfterCreate is still used the same way as
-  // before for the "shop not listed? Add New Shop" sub-flow.
-  let checkInPendingAfterCreate = false; // true while "Add New Shop" was opened FROM the check-in flow
-  let pendingCheckInPhoto = null; // the photo (data: URL), captured before a shop is chosen
+  // ---- CHECK IN (Shop Visit dashboard) ----
+  // The Check In tab is a dashboard by default: visit-count stat cards plus
+  // a Recent Visits list. "+ New Visit" is the only way to actually start
+  // one, with two modes:
+  //   - Check In Now: opens the camera immediately, THEN shows the shop
+  //     picker (search list) once the photo exists, so a rep never has to
+  //     scroll a list before they can even take the photo.
+  //   - Plan a Visit for Later: no photo yet -- just marks a shop as a
+  //     Pending visit, shown in Recent Visits until someone completes it
+  //     (tapping a Pending row jumps straight to the camera for that exact
+  //     shop, skipping the picker since it's already known).
+  let checkInPendingAfterCreate = false; // true while "Add New Shop" was opened FROM the check-in flow (either mode)
+  let pendingCheckInPhoto = null; // the photo (data: URL), held between being taken and a shop being confirmed
+  let checkInPickerMode = 'complete'; // 'complete' (finishing a check-in) or 'plan' (planning ahead, no photo)
+  let completingVisitId = null; // set only when finishing one specific PLANNED (Pending) visit
+  let completingCustomer = null; // { customerId, customerName } for the same case
+  let lastVisitOverview = null; // the latest getVisitStats() response, reused when a tile modal opens
 
-  // Tapping the Check In button (bottom nav or Home's Quick Action) goes
-  // straight to the camera -- no list shown yet.
+  function openNewVisitOptions() {
+    document.getElementById('new-visit-modal').classList.add('active');
+  }
+
+  // The normal entry point (bottom nav, Home's Quick Action): shows the
+  // dashboard and refreshes its numbers -- does NOT open the camera itself.
+  function openCheckInTab() {
+    switchTab('checkin');
+    showCheckInDashboard();
+    loadCheckInDashboard();
+  }
+
+  function showCheckInDashboard() {
+    document.getElementById('checkin-dashboard-section').style.display = '';
+    document.getElementById('checkin-picker-section').style.display = 'none';
+  }
+  function showCheckInPickerSection() {
+    document.getElementById('checkin-dashboard-section').style.display = 'none';
+    document.getElementById('checkin-picker-section').style.display = '';
+    document.getElementById('checkin-picker-hint').textContent = checkInPickerMode === 'plan'
+      ? '🗓️ Select which shop you plan to visit:'
+      : '📸 Photo captured — now select which shop this visit was to:';
+  }
+
+  function loadCheckInDashboard() {
+    apiCall('getVisitStats', {}).then(res => {
+      if (!res.success) return;
+      lastVisitOverview = res;
+      document.getElementById('visit-stat-today').textContent = res.today;
+      document.getElementById('visit-stat-week').textContent = res.thisWeek;
+      document.getElementById('visit-stat-month').textContent = res.thisMonth;
+      document.getElementById('visit-stat-plan').textContent = (res.planToVisit || []).length;
+      document.getElementById('visit-stat-need').textContent = (res.needToVisit || []).length;
+      document.getElementById('visit-stat-never').textContent = (res.neverVisit || []).length;
+    });
+    apiCall('getCheckInHistory', {}).then(res => {
+      if (!res.success) return;
+      renderRecentVisits(res.rows.slice(0, 5));
+    });
+  }
+
+  // Tapping any of the three new tiles (Plan To Visit / Need To Visit /
+  // Never Visit) opens the same modal shape with the matching list from the
+  // last getVisitStats() response -- no extra network round trip needed.
+  function openVisitListModal(kind) {
+    if (!lastVisitOverview) return;
+    const titleMap = { plan: '🗓️ Plan To Visit', need: '⏰ Need To Visit', never: '🆕 Never Visit' };
+    const emptyMap = {
+      plan: 'No planned visits right now.',
+      need: 'No overdue shops -- nice work!',
+      never: 'Every shop has been visited at least once.'
+    };
+    document.getElementById('visit-list-modal-title').textContent = titleMap[kind] || 'Visits';
+    const list = kind === 'plan' ? (lastVisitOverview.planToVisit || [])
+      : kind === 'need' ? (lastVisitOverview.needToVisit || [])
+      : (lastVisitOverview.neverVisit || []);
+    const body = document.getElementById('visit-list-modal-body');
+    if (!list.length) {
+      body.innerHTML = `<div style="text-align:center; color:var(--text-sub); font-size:13px; padding:24px 0;">${emptyMap[kind]}</div>`;
+    } else {
+      body.innerHTML = list.map(item => {
+        const custId = item.customerId || '';
+        const safeName = String(item.customerName || '-').replace(/'/g, "\\'");
+        let subLine = '';
+        let actionBtn = '';
+        if (kind === 'plan') {
+          subLine = item.plannedAt ? ('Planned ' + item.plannedAt) : 'Planned';
+          actionBtn = `<button onclick="closeModal('visit-list-modal'); completePendingVisit('${item.visitId}', '${custId}', '${safeName}')" style="background:var(--brand); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:700; white-space:nowrap;">📷 Check In</button>`;
+        } else {
+          subLine = item.lastVisit ? ('Last visit: ' + item.lastVisit) : 'Never visited';
+          actionBtn = `<button onclick="closeModal('visit-list-modal'); choosePlanVisit('${custId}', '${safeName}')" style="background:var(--brand-light); color:var(--brand); border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:700; white-space:nowrap;">🗓️ Plan Visit</button>`;
+        }
+        return `<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
+          <div style="min-width:0;">
+            <div style="font-weight:700; font-size:13.5px;">${item.customerName || '-'}</div>
+            <div style="font-size:11px; color:var(--text-sub);">${subLine}</div>
+          </div>
+          ${actionBtn}
+        </div>`;
+      }).join('');
+    }
+    document.getElementById('visit-list-modal').classList.add('active');
+  }
+
+  function renderRecentVisits(rows) {
+    const list = document.getElementById('recent-visits-list');
+    if (!rows || rows.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="ic">📷</div><div class="t">No visits yet</div><div class="s">Tap "+ New Visit" to log your first one</div></div>`;
+      return;
+    }
+    list.innerHTML = rows.map(r => {
+      // Status may be blank on rows saved before this feature existed --
+      // those were always immediate, so treat blank as Completed.
+      const isPending = String(r.Status || '').trim() === 'Pending';
+      const badgeColor = isPending ? '#B45309' : 'var(--success)';
+      const badgeBg = isPending ? 'var(--warning-light)' : 'var(--success-light)';
+      const tapHandler = isPending
+        ? `completePendingVisit('${String(r.Visit_ID || '').replace(/'/g, "\\'")}', '${String(r.Customer_ID || '').replace(/'/g, "\\'")}', '${String(r.Customer_Name || '').replace(/'/g, "\\'")}')`
+        : '';
+      return `
+      <div class="list-card" ${tapHandler ? `onclick="${tapHandler}" style="cursor:pointer;"` : ''}>
+        <div class="avatar" style="background:${avatarColorFor(r.Customer_Name)}">${initialsFor(r.Customer_Name)}</div>
+        <div class="body">
+          <div class="title">${r.Customer_Name}</div>
+          <div class="sub">${r.Timestamp}${r.Sales_Rep ? ' · ' + r.Sales_Rep : ''}</div>
+        </div>
+        <span style="background:${badgeBg}; color:${badgeColor}; font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:8px; white-space:nowrap;">${isPending ? 'Pending' : 'Completed'}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function scrollToCheckInHistory() {
+    document.getElementById('checkin-history-anchor').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // "Check In Now" from the New Visit modal, or completing a specific
+  // planned visit -- either way, opens the camera immediately.
   function startCheckIn() {
+    checkInPickerMode = 'complete';
     document.getElementById('checkin-photo-input').value = ''; // clear so re-selecting the same photo still fires onchange
     document.getElementById('checkin-photo-input').click();
+  }
+
+  // Tapping a Pending row in Recent Visits: the shop is already known, so
+  // this skips the picker entirely and goes straight to the camera.
+  function completePendingVisit(visitId, customerId, customerName) {
+    completingVisitId = visitId;
+    completingCustomer = { customerId, customerName };
+    startCheckIn();
+  }
+
+  // "Plan a Visit for Later" from the New Visit modal: no photo needed,
+  // just shows the same shop picker in 'plan' mode.
+  function openPlanVisitPicker() {
+    checkInPickerMode = 'plan';
+    switchTab('checkin');
+    showCheckInPickerSection();
+    renderCheckInList();
   }
 
   function handleCheckInPhotoSelected(event) {
@@ -828,20 +1048,27 @@
     const reader = new FileReader();
     reader.onload = () => {
       pendingCheckInPhoto = reader.result; // a data: URL -- checkInAtShop strips the prefix itself
-      // Now that the photo exists, show the shop picker so they can say who
-      // this visit was to.
-      switchTab('checkin');
-      renderCheckInList();
+      if (completingCustomer) {
+        // Already know which shop this is (completing a planned visit) --
+        // skip the picker entirely and finish right away.
+        finishCheckIn(completingCustomer.customerId, completingCustomer.customerName, completingVisitId);
+      } else {
+        switchTab('checkin');
+        showCheckInPickerSection();
+        renderCheckInList();
+      }
     };
     reader.readAsDataURL(file);
   }
 
-  // Backs out of an in-progress check-in (photo already taken, no shop
-  // picked yet) -- discards the photo rather than leaving it dangling with
-  // nowhere to go, and returns to Home.
+  // Backs out of an in-progress check-in or visit plan -- discards
+  // anything pending (photo, planned-visit target) rather than leaving it
+  // dangling, and returns to the dashboard.
   function cancelPendingCheckIn() {
     pendingCheckInPhoto = null;
-    switchTab('home');
+    completingVisitId = null;
+    completingCustomer = null;
+    openCheckInTab();
   }
 
   function renderCheckInList() {
@@ -855,13 +1082,29 @@
     }
     list.innerHTML = filtered.map(c => {
       const name = c.Customer_Name || 'Unnamed';
+      const custId = String(c.Customer_ID).replace(/'/g, "\\'");
+      const safeName = name.replace(/'/g, "\\'");
+      const handler = checkInPickerMode === 'plan'
+        ? `choosePlanVisit('${custId}', '${safeName}')`
+        : `performCheckIn('${custId}', '${safeName}')`;
       return `
-      <div class="list-card" onclick="performCheckIn('${String(c.Customer_ID).replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">
+      <div class="list-card" onclick="${handler}">
         <div class="avatar" style="background:${avatarColorFor(name)}">${initialsFor(name)}</div>
         <div class="body"><div class="title">${name}</div><div class="sub">${c.Contact_No || ''}</div></div>
         <span class="chev">›</span>
       </div>`;
     }).join('');
+  }
+
+  // Picking a shop while planning a visit (no photo involved) -- just logs
+  // it as Pending and returns to the refreshed dashboard.
+  function choosePlanVisit(customerId, customerName) {
+    apiCall('planVisit', { payload: { customerId, customerName } }).then(res => {
+      if (!res.success) return showToast(res.message);
+      showToast(res.message);
+      checkInPickerMode = 'complete';
+      openCheckInTab();
+    });
   }
 
   function loadCheckInHistory() {
@@ -874,21 +1117,28 @@
         list.innerHTML = `<div class="empty-state"><div class="ic">📷</div><div class="t">No check-ins in this range</div></div>`;
         return;
       }
-      list.innerHTML = res.rows.map(r => `
+      list.innerHTML = res.rows.map(r => {
+        const isPending = String(r.Status || '').trim() === 'Pending';
+        return `
         <div class="list-card">
           <div class="avatar" style="background:var(--brand-light); color:var(--brand); font-size:16px;">📍</div>
           <div class="body">
-            <div class="title">${r.Customer_Name}</div>
+            <div class="title">${r.Customer_Name}${isPending ? ' <span style="color:#B45309; font-size:10.5px; font-weight:700;">· Pending</span>' : ''}</div>
             <div class="sub">${r.Timestamp}${r.Sales_Rep ? ' · ' + r.Sales_Rep : ''}${r.Notes ? ' · ' + r.Notes : ''}</div>
           </div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     });
   }
 
-  // Tapping a shop now finalizes the check-in -- the photo was already
-  // taken before this screen was even shown (pendingCheckInPhoto holds it).
+  // Tapping a shop in 'complete' mode finalizes the check-in -- the photo
+  // was already taken before this screen was even shown.
   function performCheckIn(customerId, customerName) {
     if (!pendingCheckInPhoto) return; // shouldn't happen -- this screen only shows once a photo exists
+    finishCheckIn(customerId, customerName, null); // null visitId -- this is a fresh, unplanned check-in
+  }
+
+  function finishCheckIn(customerId, customerName, visitId) {
     const photoBase64 = pendingCheckInPhoto;
     // A short note about the visit -- optional (an empty answer or Cancel
     // just proceeds with no note, doesn't block the check-in the way the
@@ -902,22 +1152,24 @@
     // may never be granted.
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude, notes),
-        () => submitCheckIn(customerId, customerName, photoBase64, '', '', notes),
+        pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude, notes, visitId),
+        () => submitCheckIn(customerId, customerName, photoBase64, '', '', notes, visitId),
         { timeout: 6000 }
       );
     } else {
-      submitCheckIn(customerId, customerName, photoBase64, '', '', notes);
+      submitCheckIn(customerId, customerName, photoBase64, '', '', notes, visitId);
     }
   }
 
-  function submitCheckIn(customerId, customerName, photoBase64, latitude, longitude, notes) {
-    apiCall('checkIn', { payload: { customerId, customerName, photoBase64, latitude, longitude, notes } }).then(res => {
+  function submitCheckIn(customerId, customerName, photoBase64, latitude, longitude, notes, visitId) {
+    apiCall('checkIn', { payload: { customerId, customerName, photoBase64, latitude, longitude, notes, visitId } }).then(res => {
       pendingCheckInPhoto = null;
+      completingVisitId = null;
+      completingCustomer = null;
       if (!res.success) return showToast(res.message);
       showToast(res.message);
-      switchTab('home');
-      loadCheckInHistory(); // keeps the history fresh for the next time this screen opens
+      openCheckInTab(); // back to the dashboard, refreshed with the new stats/visit
+      loadCheckInHistory(); // keeps the filterable full history fresh too
     });
   }
 
@@ -1005,7 +1257,13 @@
       loadCustomers();
       if (checkInPendingAfterCreate) {
         checkInPendingAfterCreate = false;
-        performCheckIn(res.customerId, name);
+        // Match whichever mode ("Check In Now" vs "Plan a Visit") was in
+        // progress when "Add New Shop" was opened.
+        if (checkInPickerMode === 'plan') {
+          choosePlanVisit(res.customerId, name);
+        } else {
+          performCheckIn(res.customerId, name);
+        }
       } else {
         showToast('Customer saved!');
       }
