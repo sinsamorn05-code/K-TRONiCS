@@ -369,21 +369,12 @@
       <div id="report-content"></div>
     </div>
 
-    <div class="tab-content" id="tab-more">
-      <div class="section-heading">More</div>
-      <div style="display:flex; flex-direction:column; gap:10px;">
-        <button onclick="switchSubScreen('checkin')" style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:left;"><span style="font-size:18px;">📷</span><span style="flex:1; font-weight:700; font-size:13.5px;">Check In</span><span class="chev">›</span></button>
-        <button onclick="switchSubScreen('today')" style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:left;"><span style="font-size:18px;">📊</span><span style="flex:1; font-weight:700; font-size:13.5px;">Reports</span><span class="chev">›</span></button>
-        <button onclick="handleLogout()" style="display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--danger); border-radius:12px; padding:14px; text-align:left; color:var(--danger);"><span style="font-size:18px;">🚪</span><span style="flex:1; font-weight:700; font-size:13.5px;">Log Out</span></button>
-      </div>
-    </div>
-
     <div class="bottom-nav">
       <button class="nav-btn active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span><span class="lbl">Home</span></button>
       <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Inventory</span></button>
       <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
       <button class="nav-btn" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
-      <button class="nav-btn" data-tab="more" onclick="switchTab('more')"><span class="ic">⋯</span><span class="lbl">More</span></button>
+      <button class="nav-btn" data-tab="checkin" onclick="switchTab('checkin')"><span class="ic">📷</span><span class="lbl">Check In</span></button>
     </div>
   </div>
 
@@ -608,19 +599,21 @@
     document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + tab).classList.add('active');
-    // checkin/today are sub-screens reached via More, not their own bottom
-    // nav button -- keep More highlighted as active for those instead of
-    // looking for a button that doesn't exist.
+    // Check In now has its own bottom nav button, so it always has a match.
+    // 'today' (Reports) no longer has any entry point in the UI -- Home's
+    // own stat cards already cover the same numbers -- but the tab markup
+    // is left in place rather than deleted outright; if it's ever reached
+    // some other way, this just leaves the nav bar with nothing highlighted
+    // instead of throwing on a missing 'more' button that no longer exists.
     const navMatch = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
     if (navMatch) { navMatch.classList.add('active'); lastMainTab = tab; }
-    else { document.querySelector(`.nav-btn[data-tab="more"]`).classList.add('active'); }
 
     if (tab === 'home') loadHomeStats();
     if (tab === 'today') loadReport();
   }
 
   function switchSubScreen(tab) { switchTab(tab); }
-  function switchSubScreenBack() { switchTab('more'); }
+  function switchSubScreenBack() { switchTab('home'); }
 
   function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
