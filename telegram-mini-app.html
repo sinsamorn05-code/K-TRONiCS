@@ -270,7 +270,7 @@
           <div style="width:48px; height:48px; border-radius:50%; background:var(--success); color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">👤</div>
           <div style="font-size:10.5px; font-weight:700;">Add Customer</div>
         </button>
-        <button onclick="switchSubScreen('checkin')" style="background:none; border:none; text-align:center;">
+        <button onclick="startCheckIn()" style="background:none; border:none; text-align:center;">
           <div style="width:48px; height:48px; border-radius:50%; background:#8B5CF6; color:#fff; display:flex; align-items:center; justify-content:center; font-size:19px; margin:0 auto 6px;">📷</div>
           <div style="font-size:10.5px; font-weight:700;">Check In</div>
         </button>
@@ -302,11 +302,13 @@
     </div>
 
     <div class="tab-content" id="tab-checkin">
-      <button onclick="switchSubScreenBack()" style="background:none; border:none; color:var(--brand); font-weight:700; font-size:13px; margin-bottom:10px;">‹ Back</button>
-      <div class="search-bar"><span class="ic">🔍</span><input type="text" id="checkin-search" placeholder="Search your shops..." oninput="renderCheckInList()"></div>
-      <div style="font-size:11.5px; color:var(--text-sub); margin-bottom:10px;">📷 A photo is required to complete check-in.</div>
-      <button class="add-btn-full" style="background:var(--brand-light); color:var(--brand);" onclick="openNewShopFromCheckIn()">➕ Shop not listed? Add New Shop</button>
-      <div id="checkin-list"></div>
+      <div id="checkin-picker-section">
+        <button onclick="cancelPendingCheckIn()" style="background:none; border:none; color:var(--danger); font-weight:700; font-size:13px; margin-bottom:10px;">✕ Cancel Check-In</button>
+        <div style="font-size:11.5px; color:var(--success); margin-bottom:10px;">📸 Photo captured — now select which shop this visit was to:</div>
+        <div class="search-bar"><span class="ic">🔍</span><input type="text" id="checkin-search" placeholder="Search your shops..." oninput="renderCheckInList()"></div>
+        <button class="add-btn-full" style="background:var(--brand-light); color:var(--brand);" onclick="openNewShopFromCheckIn()">➕ Shop not listed? Add New Shop</button>
+        <div id="checkin-list"></div>
+      </div>
 
       <div class="section-heading" style="margin-top:20px;">Check-In History</div>
       <div class="filter-pills" id="ci-date-pills">
@@ -374,7 +376,7 @@
       <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Inventory</span></button>
       <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
       <button class="nav-btn" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
-      <button class="nav-btn" data-tab="checkin" onclick="switchTab('checkin')"><span class="ic">📷</span><span class="lbl">Check In</span></button>
+      <button class="nav-btn" data-tab="checkin" onclick="startCheckIn()"><span class="ic">📷</span><span class="lbl">Check In</span></button>
     </div>
   </div>
 
@@ -805,7 +807,42 @@
   }
 
   // ---- CHECK IN ----
+  // New order: rep taps Check In, camera opens immediately, THEN they pick
+  // which shop the photo was of (search list, same data as before) -- not
+  // the other way around. pendingCheckInPhoto holds the photo between those
+  // two steps; checkInPendingAfterCreate is still used the same way as
+  // before for the "shop not listed? Add New Shop" sub-flow.
   let checkInPendingAfterCreate = false; // true while "Add New Shop" was opened FROM the check-in flow
+  let pendingCheckInPhoto = null; // the photo (data: URL), captured before a shop is chosen
+
+  // Tapping the Check In button (bottom nav or Home's Quick Action) goes
+  // straight to the camera -- no list shown yet.
+  function startCheckIn() {
+    document.getElementById('checkin-photo-input').value = ''; // clear so re-selecting the same photo still fires onchange
+    document.getElementById('checkin-photo-input').click();
+  }
+
+  function handleCheckInPhotoSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      pendingCheckInPhoto = reader.result; // a data: URL -- checkInAtShop strips the prefix itself
+      // Now that the photo exists, show the shop picker so they can say who
+      // this visit was to.
+      switchTab('checkin');
+      renderCheckInList();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Backs out of an in-progress check-in (photo already taken, no shop
+  // picked yet) -- discards the photo rather than leaving it dangling with
+  // nowhere to go, and returns to Home.
+  function cancelPendingCheckIn() {
+    pendingCheckInPhoto = null;
+    switchTab('home');
+  }
 
   function renderCheckInList() {
     const q = document.getElementById('checkin-search').value.trim().toLowerCase();
@@ -822,7 +859,7 @@
       <div class="list-card" onclick="performCheckIn('${String(c.Customer_ID).replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">
         <div class="avatar" style="background:${avatarColorFor(name)}">${initialsFor(name)}</div>
         <div class="body"><div class="title">${name}</div><div class="sub">${c.Contact_No || ''}</div></div>
-        <span class="chev">📷</span>
+        <span class="chev">›</span>
       </div>`;
     }).join('');
   }
@@ -848,53 +885,39 @@
     });
   }
 
-  // Tapping a shop doesn't check in immediately anymore -- a photo is
-  // required first, so this just remembers WHICH shop and opens the
-  // camera; the actual check-in call happens once a photo comes back.
-  let pendingCheckIn = null;
+  // Tapping a shop now finalizes the check-in -- the photo was already
+  // taken before this screen was even shown (pendingCheckInPhoto holds it).
   function performCheckIn(customerId, customerName) {
-    pendingCheckIn = { customerId, customerName };
-    document.getElementById('checkin-photo-input').value = ''; // clear so re-selecting the same photo still fires onchange
-    document.getElementById('checkin-photo-input').click();
-  }
+    if (!pendingCheckInPhoto) return; // shouldn't happen -- this screen only shows once a photo exists
+    const photoBase64 = pendingCheckInPhoto;
+    // A short note about the visit -- optional (an empty answer or Cancel
+    // just proceeds with no note, doesn't block the check-in the way the
+    // photo does).
+    const notes = prompt(`Anything to note about this visit to ${customerName}? (optional)`) || '';
 
-  function handleCheckInPhotoSelected(event) {
-    const file = event.target.files[0];
-    if (!file || !pendingCheckIn) return;
-    const { customerId, customerName } = pendingCheckIn;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const photoBase64 = reader.result; // a data: URL -- checkInAtShop strips the prefix itself
-      // A short note about the visit -- optional (an empty answer or
-      // Cancel just proceeds with no note, doesn't block the check-in the
-      // way the photo does).
-      const notes = prompt(`Anything to note about this visit to ${customerName}? (optional)`) || '';
-
-      showToast('Uploading photo...');
-      // GPS is attempted but never blocks the check-in -- if location is
-      // denied or unavailable, the check-in still goes through with the
-      // photo alone rather than getting stuck waiting on a permission
-      // that may never be granted.
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude, notes),
-          () => submitCheckIn(customerId, customerName, photoBase64, '', '', notes),
-          { timeout: 6000 }
-        );
-      } else {
-        submitCheckIn(customerId, customerName, photoBase64, '', '', notes);
-      }
-    };
-    reader.readAsDataURL(file);
+    showToast('Uploading photo...');
+    // GPS is attempted but never blocks the check-in -- if location is
+    // denied or unavailable, the check-in still goes through with the
+    // photo alone rather than getting stuck waiting on a permission that
+    // may never be granted.
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude, notes),
+        () => submitCheckIn(customerId, customerName, photoBase64, '', '', notes),
+        { timeout: 6000 }
+      );
+    } else {
+      submitCheckIn(customerId, customerName, photoBase64, '', '', notes);
+    }
   }
 
   function submitCheckIn(customerId, customerName, photoBase64, latitude, longitude, notes) {
     apiCall('checkIn', { payload: { customerId, customerName, photoBase64, latitude, longitude, notes } }).then(res => {
-      pendingCheckIn = null;
+      pendingCheckInPhoto = null;
       if (!res.success) return showToast(res.message);
       showToast(res.message);
-      loadCheckInHistory();
+      switchTab('home');
+      loadCheckInHistory(); // keeps the history fresh for the next time this screen opens
     });
   }
 
