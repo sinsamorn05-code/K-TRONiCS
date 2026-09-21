@@ -869,7 +869,7 @@
             <div class="list-card">
               <div class="avatar" style="background:var(--brand-light); color:var(--brand); font-size:16px;">📍</div>
               <div class="body">
-                <div class="title">${isPending ? 'Planned visit' : 'Visit'}${v.converted ? ' <span style="color:var(--success); font-size:10.5px; font-weight:700;">· 💰 Ordered</span>' : ''}</div>
+                <div class="title">${isPending ? 'Planned visit' : 'Visit'}${v.converted ? ` <span style="color:var(--success); font-size:10.5px; font-weight:700;">· 💰 Ordered${v.soNumber ? ' (' + v.soNumber + ')' : ''}</span>` : ''}</div>
                 <div class="sub">${subParts.join(' · ')}</div>
               </div>
               ${mapLink ? `<a href="${mapLink}" target="_blank" style="font-size:10px; color:var(--brand); font-weight:700; text-decoration:none; white-space:nowrap;">📍 Map</a>` : ''}
@@ -1115,7 +1115,7 @@
         </div>
         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
           <span style="background:${badgeBg}; color:${badgeColor}; font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:8px; white-space:nowrap;">${isPending ? 'Pending' : 'Completed'}</span>
-          ${r.Converted ? `<span style="color:var(--success); font-size:10px; font-weight:700;">💰 Ordered</span>` : ''}
+          ${r.Converted ? `<span style="color:var(--success); font-size:10px; font-weight:700;">💰 Ordered${r.Converted_To_SO ? ' (' + r.Converted_To_SO + ')' : ''}</span>` : ''}
           ${mapLink ? `<a href="${mapLink}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px; color:var(--brand); font-weight:700; text-decoration:none;">📍 Map</a>` : ''}
         </div>
       </div>`;
@@ -1238,7 +1238,7 @@
         <div class="list-card">
           <div class="avatar" style="background:var(--brand-light); color:var(--brand); font-size:16px;">📍</div>
           <div class="body">
-            <div class="title">${r.Customer_Name}${isPending ? ' <span style="color:#B45309; font-size:10.5px; font-weight:700;">· Pending</span>' : ''}${r.Converted ? ' <span style="color:var(--success); font-size:10.5px; font-weight:700;">· 💰 Ordered</span>' : ''}</div>
+            <div class="title">${r.Customer_Name}${isPending ? ' <span style="color:#B45309; font-size:10.5px; font-weight:700;">· Pending</span>' : ''}${r.Converted ? ` <span style="color:var(--success); font-size:10.5px; font-weight:700;">· 💰 Ordered${r.Converted_To_SO ? ' (' + r.Converted_To_SO + ')' : ''}</span>` : ''}</div>
             <div class="sub">${subParts.join(' · ')}</div>
           </div>
           ${mapLink ? `<a href="${mapLink}" target="_blank" style="font-size:10px; color:var(--brand); font-weight:700; text-decoration:none; white-space:nowrap;">📍 Map</a>` : ''}
