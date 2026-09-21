@@ -371,6 +371,7 @@
         <input type="date" id="ci-start-date" class="field-input" style="margin-bottom:0;" onchange="loadCheckInHistory()">
         <input type="date" id="ci-end-date" class="field-input" style="margin-bottom:0;" onchange="loadCheckInHistory()">
       </div>
+      <div id="ci-route-btn-wrap"></div>
       <div id="checkin-history-list"></div>
     </div>
 
@@ -533,6 +534,28 @@
             <div style="font-size:11.5px; color:var(--text-sub); margin-top:2px;">Add a shop to visit soon -- shows as Pending until you check in</div>
           </span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="customer-visit-profile-modal">
+    <div class="modal-sheet">
+      <div class="modal-header"><button class="back" onclick="closeModal('customer-visit-profile-modal')">‹</button><h3 id="visit-profile-title">Visit History</h3></div>
+      <div class="modal-body" id="visit-profile-body"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="outcome-modal">
+    <div class="modal-sheet">
+      <div class="modal-header"><button class="back" onclick="closeModal('outcome-modal')">‹</button><h3>Visit Outcome</h3></div>
+      <div class="modal-body">
+        <div style="font-size:12.5px; color:var(--text-sub); margin-bottom:8px;">What happened at this visit? (optional, but helps you plan follow-ups)</div>
+        <div id="outcome-chips" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;"></div>
+        <div class="field-group">
+          <div class="field-group-icon"><span class="ic">📝</span><label>Notes (optional)</label></div>
+          <textarea id="outcome-notes" class="field-input" rows="3" placeholder="Anything else to remember about this visit..."></textarea>
+        </div>
+        <button class="primary-btn" onclick="confirmCheckInOutcome()">✅ Save Check-In</button>
       </div>
     </div>
   </div>
@@ -798,8 +821,76 @@
       ${detailRow('👤', 'Sales Rep', c.Sales_Rep)}
       ${detailRow('✅', 'Status', c.Status)}
       ${c.Google_Map ? `<button class="primary-btn" style="margin-top:6px;" onclick="window.open('${c.Google_Map}', '_blank')">📍 Open in Google Maps</button>` : ''}
+      <button class="primary-btn" style="margin-top:8px; background:var(--brand-light); color:var(--brand);" onclick="openCustomerVisitProfile('${String(c.Customer_ID).replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">📋 View Visit History</button>
     `;
     document.getElementById('customer-detail-modal').classList.add('active');
+  }
+
+  // The full visit picture for one customer -- every check-in (with its
+  // outcome and whether it converted into a same-day order), the summary
+  // numbers, and their order history -- everything needed to plan what to
+  // sell them next.
+  function openCustomerVisitProfile(customerId, customerName) {
+    document.getElementById('visit-profile-title').textContent = customerName;
+    const body = document.getElementById('visit-profile-body');
+    body.innerHTML = `<div class="empty-state"><div class="ic">⏳</div><div class="s">Loading...</div></div>`;
+    document.getElementById('customer-visit-profile-modal').classList.add('active');
+
+    apiCall('getCustomerVisitProfile', { payload: { customerId, customerName } }).then(res => {
+      if (!res.success) { body.innerHTML = `<div class="empty-state"><div class="t">${res.message || 'Could not load visit history.'}</div></div>`; return; }
+
+      const statsHtml = `
+        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:18px;">
+          <div style="background:var(--brand-light); border-radius:12px; padding:10px; text-align:center;">
+            <div style="font-size:18px; font-weight:800; color:var(--brand);">${res.totalVisits}</div>
+            <div style="font-size:10px; color:var(--text-sub);">Total Visits</div>
+          </div>
+          <div style="background:var(--success-light); border-radius:12px; padding:10px; text-align:center;">
+            <div style="font-size:18px; font-weight:800; color:var(--success);">$${Number(res.totalRevenue).toFixed(0)}</div>
+            <div style="font-size:10px; color:var(--text-sub);">Total Revenue</div>
+          </div>
+          <div style="background:var(--warning-light); border-radius:12px; padding:10px; text-align:center;">
+            <div style="font-size:18px; font-weight:800; color:#B45309;">${res.avgDaysBetween !== null ? res.avgDaysBetween + 'd' : '—'}</div>
+            <div style="font-size:10px; color:var(--text-sub);">Avg Between Visits</div>
+          </div>
+        </div>
+        <div style="font-size:11.5px; color:var(--text-sub); margin-bottom:16px;">Last visit: ${res.lastVisit || 'Never'} · ${res.orderCount} order${res.orderCount === 1 ? '' : 's'} placed</div>
+      `;
+
+      const visitsHtml = !res.visits.length
+        ? `<div class="empty-state"><div class="ic">📷</div><div class="t">No visits yet</div></div>`
+        : res.visits.map(v => {
+            const isPending = v.status === 'Pending';
+            const mapLink = mapLinkFor(v.latitude, v.longitude);
+            const subParts = [v.timestamp || v.date];
+            if (v.outcome) subParts.push(v.outcome);
+            if (v.notes) subParts.push(v.notes);
+            return `
+            <div class="list-card">
+              <div class="avatar" style="background:var(--brand-light); color:var(--brand); font-size:16px;">📍</div>
+              <div class="body">
+                <div class="title">${isPending ? 'Planned visit' : 'Visit'}${v.converted ? ' <span style="color:var(--success); font-size:10.5px; font-weight:700;">· 💰 Ordered</span>' : ''}</div>
+                <div class="sub">${subParts.join(' · ')}</div>
+              </div>
+              ${mapLink ? `<a href="${mapLink}" target="_blank" style="font-size:10px; color:var(--brand); font-weight:700; text-decoration:none; white-space:nowrap;">📍 Map</a>` : ''}
+            </div>`;
+          }).join('');
+
+      const ordersHtml = !res.orders.length ? '' : `
+        <div class="section-heading" style="margin-top:18px;">Order History</div>
+        ${res.orders.map(o => `
+          <div class="list-card">
+            <div class="avatar" style="background:var(--success-light); color:var(--success); font-size:16px;">🧾</div>
+            <div class="body">
+              <div class="title">${o.SO_Number}</div>
+              <div class="sub">${o.Order_Date} · ${o.Order_Status}</div>
+            </div>
+            <div style="font-weight:700;">$${Number(o.Total_Amount).toFixed(2)}</div>
+          </div>`).join('')}
+      `;
+
+      body.innerHTML = statsHtml + `<div class="section-heading">Visit Timeline</div>` + visitsHtml + ordersHtml;
+    });
   }
 
   function viewOrder(soNumber) {
@@ -972,10 +1063,13 @@
           actionBtn = `<button onclick="closeModal('visit-list-modal'); completePendingVisit('${item.visitId}', '${custId}', '${safeName}')" style="background:var(--brand); color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:700; white-space:nowrap;">📷 Check In</button>`;
         } else {
           subLine = item.lastVisit ? ('Last visit: ' + item.lastVisit) : 'Never visited';
+          // Surfaces how much this shop is actually worth -- lets the rep
+          // judge an overdue $2,000/mo customer differently from a $20 one.
+          if (item.totalRevenue) subLine += ' · $' + Number(item.totalRevenue).toFixed(0) + ' revenue';
           actionBtn = `<button onclick="closeModal('visit-list-modal'); choosePlanVisit('${custId}', '${safeName}')" style="background:var(--brand-light); color:var(--brand); border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:700; white-space:nowrap;">🗓️ Plan Visit</button>`;
         }
         return `<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);">
-          <div style="min-width:0;">
+          <div style="min-width:0; cursor:pointer;" onclick="closeModal('visit-list-modal'); openCustomerVisitProfile('${custId}', '${safeName}')">
             <div style="font-weight:700; font-size:13.5px;">${item.customerName || '-'}</div>
             <div style="font-size:11px; color:var(--text-sub);">${subLine}</div>
           </div>
@@ -984,6 +1078,13 @@
       }).join('');
     }
     document.getElementById('visit-list-modal').classList.add('active');
+  }
+
+  // A plain Google Maps pin link for one lat/long pair, or '' if either is
+  // missing -- used everywhere a check-in's location needs to be tappable.
+  function mapLinkFor(lat, lng) {
+    if (lat === '' || lat === undefined || lat === null || lng === '' || lng === undefined || lng === null) return '';
+    return `https://www.google.com/maps?q=${lat},${lng}`;
   }
 
   function renderRecentVisits(rows) {
@@ -1001,14 +1102,22 @@
       const tapHandler = isPending
         ? `completePendingVisit('${String(r.Visit_ID || '').replace(/'/g, "\\'")}', '${String(r.Customer_ID || '').replace(/'/g, "\\'")}', '${String(r.Customer_Name || '').replace(/'/g, "\\'")}')`
         : '';
+      const subParts = [r.Timestamp];
+      if (r.Sales_Rep) subParts.push(r.Sales_Rep);
+      if (r.Outcome) subParts.push(r.Outcome);
+      const mapLink = mapLinkFor(r.Latitude, r.Longitude);
       return `
       <div class="list-card" ${tapHandler ? `onclick="${tapHandler}" style="cursor:pointer;"` : ''}>
         <div class="avatar" style="background:${avatarColorFor(r.Customer_Name)}">${initialsFor(r.Customer_Name)}</div>
         <div class="body">
           <div class="title">${r.Customer_Name}</div>
-          <div class="sub">${r.Timestamp}${r.Sales_Rep ? ' · ' + r.Sales_Rep : ''}</div>
+          <div class="sub">${subParts.join(' · ')}</div>
         </div>
-        <span style="background:${badgeBg}; color:${badgeColor}; font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:8px; white-space:nowrap;">${isPending ? 'Pending' : 'Completed'}</span>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+          <span style="background:${badgeBg}; color:${badgeColor}; font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:8px; white-space:nowrap;">${isPending ? 'Pending' : 'Completed'}</span>
+          ${r.Converted ? `<span style="color:var(--success); font-size:10px; font-weight:700;">💰 Ordered</span>` : ''}
+          ${mapLink ? `<a href="${mapLink}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px; color:var(--brand); font-weight:700; text-decoration:none;">📍 Map</a>` : ''}
+        </div>
       </div>`;
     }).join('');
   }
@@ -1115,19 +1224,43 @@
       if (!res.success) return showToast(res.message);
       if (res.rows.length === 0) {
         list.innerHTML = `<div class="empty-state"><div class="ic">📷</div><div class="t">No check-ins in this range</div></div>`;
+        document.getElementById('ci-route-btn-wrap').innerHTML = '';
         return;
       }
       list.innerHTML = res.rows.map(r => {
         const isPending = String(r.Status || '').trim() === 'Pending';
+        const mapLink = mapLinkFor(r.Latitude, r.Longitude);
+        const subParts = [r.Timestamp];
+        if (r.Sales_Rep) subParts.push(r.Sales_Rep);
+        if (r.Outcome) subParts.push(r.Outcome);
+        if (r.Notes) subParts.push(r.Notes);
         return `
         <div class="list-card">
           <div class="avatar" style="background:var(--brand-light); color:var(--brand); font-size:16px;">📍</div>
           <div class="body">
-            <div class="title">${r.Customer_Name}${isPending ? ' <span style="color:#B45309; font-size:10.5px; font-weight:700;">· Pending</span>' : ''}</div>
-            <div class="sub">${r.Timestamp}${r.Sales_Rep ? ' · ' + r.Sales_Rep : ''}${r.Notes ? ' · ' + r.Notes : ''}</div>
+            <div class="title">${r.Customer_Name}${isPending ? ' <span style="color:#B45309; font-size:10.5px; font-weight:700;">· Pending</span>' : ''}${r.Converted ? ' <span style="color:var(--success); font-size:10.5px; font-weight:700;">· 💰 Ordered</span>' : ''}</div>
+            <div class="sub">${subParts.join(' · ')}</div>
           </div>
+          ${mapLink ? `<a href="${mapLink}" target="_blank" style="font-size:10px; color:var(--brand); font-weight:700; text-decoration:none; white-space:nowrap;">📍 Map</a>` : ''}
         </div>`;
       }).join('');
+
+      // A one-tap Google Maps route through every LOCATED visit in the
+      // currently-filtered range, in the order they happened -- lets a rep
+      // (or admin reviewing a rep's day) see the actual ground they covered
+      // and plan tomorrow's route around it.
+      const routeRows = res.rows.filter(r => r.Latitude && r.Longitude).slice().reverse();
+      const routeWrap = document.getElementById('ci-route-btn-wrap');
+      if (routeRows.length >= 2) {
+        const points = routeRows.map(r => `${r.Latitude},${r.Longitude}`);
+        const destination = points.pop();
+        const origin = points.shift();
+        const waypoints = points.length ? `&waypoints=${points.join('|')}` : '';
+        const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints}`;
+        routeWrap.innerHTML = `<button class="primary-btn" style="margin-bottom:12px;" onclick="window.open('${routeUrl}', '_blank')">🗺️ View Route (${routeRows.length} stops)</button>`;
+      } else {
+        routeWrap.innerHTML = '';
+      }
     });
   }
 
@@ -1138,13 +1271,48 @@
     finishCheckIn(customerId, customerName, null); // null visitId -- this is a fresh, unplanned check-in
   }
 
-  function finishCheckIn(customerId, customerName, visitId) {
-    const photoBase64 = pendingCheckInPhoto;
-    // A short note about the visit -- optional (an empty answer or Cancel
-    // just proceeds with no note, doesn't block the check-in the way the
-    // photo does).
-    const notes = prompt(`Anything to note about this visit to ${customerName}? (optional)`) || '';
+  // The 6 outcome tags a rep can pick for a visit -- kept short and
+  // concrete so tapping one is faster than typing a note, but still gives
+  // enough structure to spot patterns later (e.g. "show me every shop that
+  // said Competitor Pricing this month").
+  const VISIT_OUTCOMES = [
+    { id: 'Ordered', ic: '🛒' },
+    { id: 'Interested', ic: '👍' },
+    { id: 'Not Interested', ic: '👎' },
+    { id: 'Out of Stock', ic: '📦' },
+    { id: 'Owner Absent', ic: '🚪' },
+    { id: 'Competitor Pricing', ic: '💸' }
+  ];
+  let selectedOutcome = '';
+  let pendingOutcomeContext = null; // { customerId, customerName, visitId }
 
+  function finishCheckIn(customerId, customerName, visitId) {
+    pendingOutcomeContext = { customerId, customerName, visitId };
+    selectedOutcome = '';
+    document.getElementById('outcome-notes').value = '';
+    renderOutcomeChips();
+    document.getElementById('outcome-modal').classList.add('active');
+  }
+
+  function renderOutcomeChips() {
+    document.getElementById('outcome-chips').innerHTML = VISIT_OUTCOMES.map(o => `
+      <button type="button" class="filter-pill${selectedOutcome === o.id ? ' active' : ''}" onclick="pickOutcome('${o.id}')">${o.ic} ${o.id}</button>
+    `).join('');
+  }
+
+  function pickOutcome(id) {
+    selectedOutcome = selectedOutcome === id ? '' : id; // tap again to deselect
+    renderOutcomeChips();
+  }
+
+  function confirmCheckInOutcome() {
+    if (!pendingOutcomeContext) return;
+    const { customerId, customerName, visitId } = pendingOutcomeContext;
+    const notes = document.getElementById('outcome-notes').value.trim();
+    const outcome = selectedOutcome;
+    closeModal('outcome-modal');
+
+    const photoBase64 = pendingCheckInPhoto;
     showToast('Uploading photo...');
     // GPS is attempted but never blocks the check-in -- if location is
     // denied or unavailable, the check-in still goes through with the
@@ -1152,20 +1320,21 @@
     // may never be granted.
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude, notes, visitId),
-        () => submitCheckIn(customerId, customerName, photoBase64, '', '', notes, visitId),
+        pos => submitCheckIn(customerId, customerName, photoBase64, pos.coords.latitude, pos.coords.longitude, notes, visitId, outcome),
+        () => submitCheckIn(customerId, customerName, photoBase64, '', '', notes, visitId, outcome),
         { timeout: 6000 }
       );
     } else {
-      submitCheckIn(customerId, customerName, photoBase64, '', '', notes, visitId);
+      submitCheckIn(customerId, customerName, photoBase64, '', '', notes, visitId, outcome);
     }
   }
 
-  function submitCheckIn(customerId, customerName, photoBase64, latitude, longitude, notes, visitId) {
-    apiCall('checkIn', { payload: { customerId, customerName, photoBase64, latitude, longitude, notes, visitId } }).then(res => {
+  function submitCheckIn(customerId, customerName, photoBase64, latitude, longitude, notes, visitId, outcome) {
+    apiCall('checkIn', { payload: { customerId, customerName, photoBase64, latitude, longitude, notes, visitId, outcome } }).then(res => {
       pendingCheckInPhoto = null;
       completingVisitId = null;
       completingCustomer = null;
+      pendingOutcomeContext = null;
       if (!res.success) return showToast(res.message);
       showToast(res.message);
       openCheckInTab(); // back to the dashboard, refreshed with the new stats/visit
