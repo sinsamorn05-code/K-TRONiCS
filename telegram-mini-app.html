@@ -216,49 +216,6 @@
         <div style="font-size:12.5px; color:var(--text-sub);" id="home-date"></div>
         <div style="font-size:12px; color:var(--text-sub); margin-top:2px;">Here's your business overview</div>
       </div>
-      <div class="filter-pills" id="home-date-pills">
-        <button class="filter-pill active" data-preset="ALL" onclick="setDatePreset('home', 'ALL')">All</button>
-        <button class="filter-pill" data-preset="TODAY" onclick="setDatePreset('home', 'TODAY')">Today</button>
-        <button class="filter-pill" data-preset="WEEK" onclick="setDatePreset('home', 'WEEK')">This week</button>
-        <button class="filter-pill" data-preset="MONTH" onclick="setDatePreset('home', 'MONTH')">This month</button>
-        <button class="filter-pill" data-preset="CUSTOM" onclick="setDatePreset('home', 'CUSTOM')">Custom</button>
-      </div>
-      <div id="home-custom-dates" style="display:none; gap:8px; margin-bottom:12px;">
-        <input type="date" id="home-start-date" class="field-input" style="margin-bottom:0;" onchange="loadHomeStats()">
-        <input type="date" id="home-end-date" class="field-input" style="margin-bottom:0;" onchange="loadHomeStats()">
-      </div>
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:18px;">
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
-          <div style="width:34px; height:34px; border-radius:10px; background:var(--success-light); color:var(--success); display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">🛒</div>
-          <div style="font-size:17px; font-weight:800;" id="home-sales">$0.00</div>
-          <div style="font-size:11px; color:var(--text-sub);">Total Sale</div>
-        </div>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
-          <div style="width:34px; height:34px; border-radius:10px; background:var(--brand-light); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">📦</div>
-          <div style="font-size:17px; font-weight:800;" id="home-orders">0</div>
-          <div style="font-size:11px; color:var(--text-sub);">Total Customer Order</div>
-        </div>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
-          <div style="width:34px; height:34px; border-radius:10px; background:#EDE9FE; color:#7C3AED; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">📷</div>
-          <div style="font-size:17px; font-weight:800;" id="home-checkins">0</div>
-          <div style="font-size:11px; color:var(--text-sub);">Total Check-In</div>
-        </div>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
-          <div style="width:34px; height:34px; border-radius:10px; background:#F3E8FF; color:#8B5CF6; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">🏷️</div>
-          <div style="font-size:17px; font-weight:800;" id="home-products">0</div>
-          <div style="font-size:11px; color:var(--text-sub);">Total Products</div>
-        </div>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
-          <div style="width:34px; height:34px; border-radius:10px; background:var(--warning-light); color:#B45309; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">⚠️</div>
-          <div style="font-size:17px; font-weight:800;" id="home-lowstock">0</div>
-          <div style="font-size:11px; color:var(--text-sub);">Low Stock</div>
-        </div>
-        <div style="background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px;">
-          <div style="width:34px; height:34px; border-radius:10px; background:#FEE2E2; color:#DC2626; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:8px;">👥</div>
-          <div style="font-size:17px; font-weight:800;" id="home-customers">0</div>
-          <div style="font-size:11px; color:var(--text-sub);">Total Customers</div>
-        </div>
-      </div>
 
       <div class="section-heading">Quick Actions</div>
       <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:18px;">
@@ -285,6 +242,36 @@
     </div>
 
     <div class="tab-content" id="tab-customers">
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:16px;">
+        <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Today</div>
+          <div style="font-size:20px; font-weight:800; color:var(--brand);" id="cust-stat-today">0</div>
+          <div style="font-size:10px; color:var(--text-sub);">New</div>
+        </div>
+        <div style="background:var(--success-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Week</div>
+          <div style="font-size:20px; font-weight:800; color:var(--success);" id="cust-stat-week">0</div>
+          <div style="font-size:10px; color:var(--text-sub);">New</div>
+        </div>
+        <div style="background:var(--warning-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Month</div>
+          <div style="font-size:20px; font-weight:800; color:#B45309;" id="cust-stat-month">0</div>
+          <div style="font-size:10px; color:var(--text-sub);">New</div>
+        </div>
+      </div>
+      <button onclick="toggleStatCustom('cust')" style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:12.5px; margin-bottom:8px;">
+        <span>📅 Custom Range</span><span id="cust-stat-custom-toggle-ic">▾</span>
+      </button>
+      <div id="cust-stat-custom-panel" style="display:none; margin-bottom:16px;">
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input type="date" id="cust-stat-custom-start" class="field-input" style="margin-bottom:0;" onchange="loadCustomerCustomStat()">
+          <input type="date" id="cust-stat-custom-end" class="field-input" style="margin-bottom:0;" onchange="loadCustomerCustomStat()">
+        </div>
+        <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:20px; font-weight:800; color:var(--brand);" id="cust-stat-custom-result">0</div>
+          <div style="font-size:10px; color:var(--text-sub);">New customers in range</div>
+        </div>
+      </div>
       <div class="search-bar"><span class="ic">🔍</span><input type="text" id="cust-search" placeholder="Search customers..." oninput="renderCustomers()"></div>
       <button class="add-btn-full" onclick="openCustomerModal()">➕ Add Customer</button>
       <div class="filter-pills" id="cust-date-pills">
@@ -376,12 +363,60 @@
     </div>
 
     <div class="tab-content" id="tab-stock">
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:10px;">
+        <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Products</div>
+          <div style="font-size:18px; font-weight:800; color:var(--brand);" id="stock-stat-products">0</div>
+        </div>
+        <div style="background:var(--success-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Total Items</div>
+          <div style="font-size:18px; font-weight:800; color:var(--success);" id="stock-stat-items">0</div>
+        </div>
+        <div style="background:var(--warning-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Low Stock</div>
+          <div style="font-size:18px; font-weight:800; color:#B45309;" id="stock-stat-lowstock">0</div>
+        </div>
+      </div>
+      <div id="stock-stat-value-wrap" style="display:none; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; margin-bottom:16px;">
+        <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Total Stock Value</div>
+        <div style="font-size:20px; font-weight:800;" id="stock-stat-value">$0.00</div>
+      </div>
       <div class="search-bar"><span class="ic">🔍</span><input type="text" id="stock-search" placeholder="Search products..." oninput="renderStock()"></div>
       <div class="filter-pills" id="stock-filter-pills"></div>
       <div id="stock-list"></div>
     </div>
 
     <div class="tab-content" id="tab-orders">
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:16px;">
+        <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Today</div>
+          <div style="font-size:18px; font-weight:800; color:var(--brand);" id="ord-stat-today-count">0</div>
+          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-today-rev">$0.00</div>
+        </div>
+        <div style="background:var(--success-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Week</div>
+          <div style="font-size:18px; font-weight:800; color:var(--success);" id="ord-stat-week-count">0</div>
+          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-week-rev">$0.00</div>
+        </div>
+        <div style="background:var(--warning-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Month</div>
+          <div style="font-size:18px; font-weight:800; color:#B45309;" id="ord-stat-month-count">0</div>
+          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-month-rev">$0.00</div>
+        </div>
+      </div>
+      <button onclick="toggleStatCustom('ord')" style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:12.5px; margin-bottom:8px;">
+        <span>📅 Custom Range</span><span id="ord-stat-custom-toggle-ic">▾</span>
+      </button>
+      <div id="ord-stat-custom-panel" style="display:none; margin-bottom:16px;">
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input type="date" id="ord-stat-custom-start" class="field-input" style="margin-bottom:0;" onchange="loadOrderCustomStat()">
+          <input type="date" id="ord-stat-custom-end" class="field-input" style="margin-bottom:0;" onchange="loadOrderCustomStat()">
+        </div>
+        <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:18px; font-weight:800; color:var(--brand);" id="ord-stat-custom-count">0</div>
+          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-custom-rev">$0.00</div>
+        </div>
+      </div>
       <div class="search-bar"><span class="ic">🔍</span><input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()"></div>
       <button class="add-btn-full" onclick="openOrderModal()">➕ Add Order</button>
       <div class="filter-pills">
@@ -422,7 +457,7 @@
     </div>
 
     <div class="bottom-nav">
-      <button class="nav-btn active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span><span class="lbl">Home</span></button>
+      <button class="nav-btn active" data-tab="home" onclick="switchTab('home')"><span class="ic">🏠</span><span class="lbl">Reports</span></button>
       <button class="nav-btn" data-tab="stock" onclick="switchTab('stock')"><span class="ic">📦</span><span class="lbl">Inventory</span></button>
       <button class="nav-btn" data-tab="orders" onclick="switchTab('orders')"><span class="ic">🧾</span><span class="lbl">Orders</span></button>
       <button class="nav-btn" data-tab="customers" onclick="switchTab('customers')"><span class="ic">👥</span><span class="lbl">Customers</span></button>
@@ -717,6 +752,84 @@
 
     if (tab === 'home') loadHomeStats();
     if (tab === 'today') loadReport();
+    if (tab === 'customers') loadCustomerDashboard();
+    if (tab === 'orders') loadOrderDashboard();
+    if (tab === 'stock') loadStockDashboard();
+  }
+
+  // Customers tab's own dashboard (New Today/This Week/This Month) --
+  // always shows the real current numbers, independent of whatever date
+  // preset the Customers list below it is filtered to.
+  function loadCustomerDashboard() {
+    apiCall('getCustomerDashboardStats').then(res => {
+      if (!res.success) return;
+      document.getElementById('cust-stat-today').textContent = res.today;
+      document.getElementById('cust-stat-week').textContent = res.thisWeek;
+      document.getElementById('cust-stat-month').textContent = res.thisMonth;
+    });
+  }
+
+  // Orders tab's own dashboard (count + revenue for Today/This Week/This
+  // Month, Confirmed orders only) -- independent of the Orders list filter.
+  function loadOrderDashboard() {
+    apiCall('getOrderDashboardStats').then(res => {
+      if (!res.success) return;
+      document.getElementById('ord-stat-today-count').textContent = res.today.count;
+      document.getElementById('ord-stat-today-rev').textContent = '$' + res.today.revenue.toFixed(2);
+      document.getElementById('ord-stat-week-count').textContent = res.thisWeek.count;
+      document.getElementById('ord-stat-week-rev').textContent = '$' + res.thisWeek.revenue.toFixed(2);
+      document.getElementById('ord-stat-month-count').textContent = res.thisMonth.count;
+      document.getElementById('ord-stat-month-rev').textContent = '$' + res.thisMonth.revenue.toFixed(2);
+    });
+  }
+
+  // Toggles the "Custom Range" panel open/closed on a dashboard row
+  // (currently used by Customers and Orders tabs).
+  function toggleStatCustom(prefix) {
+    const panel = document.getElementById(prefix + '-stat-custom-panel');
+    const ic = document.getElementById(prefix + '-stat-custom-toggle-ic');
+    const opening = panel.style.display === 'none';
+    panel.style.display = opening ? '' : 'none';
+    ic.textContent = opening ? '▴' : '▾';
+  }
+
+  function loadCustomerCustomStat() {
+    const start = document.getElementById('cust-stat-custom-start').value;
+    const end = document.getElementById('cust-stat-custom-end').value;
+    if (!start || !end) return;
+    apiCall('getCustomerDashboardStats', { customStart: start, customEnd: end }).then(res => {
+      if (!res.success) return;
+      document.getElementById('cust-stat-custom-result').textContent = res.custom;
+    });
+  }
+
+  function loadOrderCustomStat() {
+    const start = document.getElementById('ord-stat-custom-start').value;
+    const end = document.getElementById('ord-stat-custom-end').value;
+    if (!start || !end) return;
+    apiCall('getOrderDashboardStats', { customStart: start, customEnd: end }).then(res => {
+      if (!res.success) return;
+      document.getElementById('ord-stat-custom-count').textContent = res.custom.count;
+      document.getElementById('ord-stat-custom-rev').textContent = '$' + res.custom.revenue.toFixed(2);
+    });
+  }
+
+  // Stock tab's own dashboard -- a current snapshot (Products/Items/Low
+  // Stock for everyone, Stock Value for Admin only).
+  function loadStockDashboard() {
+    apiCall('getStockDashboardStats').then(res => {
+      if (!res.success) return;
+      document.getElementById('stock-stat-products').textContent = res.totalProducts;
+      document.getElementById('stock-stat-items').textContent = res.totalItems;
+      document.getElementById('stock-stat-lowstock').textContent = res.lowStockCount;
+      const valueWrap = document.getElementById('stock-stat-value-wrap');
+      if (res.isAdmin) {
+        valueWrap.style.display = '';
+        document.getElementById('stock-stat-value').textContent = '$' + Number(res.stockValue || 0).toFixed(2);
+      } else {
+        valueWrap.style.display = 'none';
+      }
+    });
   }
 
   function switchSubScreen(tab) { switchTab(tab); }
@@ -1826,15 +1939,13 @@
     greeting.innerText = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (currentUser ? ', ' + (currentUser.role === 'Admin' ? 'Admin' : currentUser.salesRepName) : '');
     document.getElementById('home-date').innerText = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' });
 
-    const range = getDateRangeFor('home');
-    apiCall('getHomeDashboardStats', range).then(res => {
+    // The stat tiles that used to live here (Total Sale, Orders, Check-Ins,
+    // Products, Low Stock, Customers) now live on their own tabs instead
+    // (Customers/Orders/Stock dashboards, plus Check In's own) -- Home only
+    // needs the Recent Activity feed now, which isn't affected by any date
+    // range, so getHomeDashboardStats is called with no range.
+    apiCall('getHomeDashboardStats', { startDate: '', endDate: '' }).then(res => {
       if (!res.success) return showToast(res.message);
-      document.getElementById('home-sales').innerText = '$' + res.totalSales;
-      document.getElementById('home-orders').innerText = res.totalOrders;
-      document.getElementById('home-checkins').innerText = res.totalCheckIns;
-      document.getElementById('home-products').innerText = res.totalProducts;
-      document.getElementById('home-lowstock').innerText = res.lowStockCount;
-      document.getElementById('home-customers').innerText = res.totalCustomers;
 
       const list = document.getElementById('home-activity-list');
       if (res.recentActivity.length === 0) {
