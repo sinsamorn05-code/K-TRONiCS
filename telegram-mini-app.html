@@ -434,6 +434,10 @@
     <div class="modal-sheet">
       <div class="modal-header"><button class="back" onclick="closeModal('customer-modal')">‹</button><h3>Add Customer</h3></div>
       <div class="modal-body">
+        <div class="field-group" id="new-cust-rep-group" style="display:none;">
+          <div class="field-group-icon"><span class="ic">🧑‍💼</span><label>Assign to Rep *</label></div>
+          <select id="new-cust-rep" class="field-input"></select>
+        </div>
         <div class="field-group">
           <div class="field-group-icon"><span class="ic">📷</span><label>Shop Photo</label></div>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -1405,12 +1409,32 @@
         });
       }
     });
+
+    // Admin creates customers on behalf of any rep -- a non-admin's own
+    // customers are always assigned to themselves automatically by the
+    // backend, so this picker only makes sense (and only shows) for Admin.
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    const repGroup = document.getElementById('new-cust-rep-group');
+    const repSelect = document.getElementById('new-cust-rep');
+    if (isAdmin) {
+      repGroup.style.display = '';
+      apiCall('getSalesOrderMetaData').then(res => {
+        if (!res.success) return;
+        repSelect.innerHTML = '<option value="">Select rep...</option>' +
+          (res.data.reps || []).map(r => `<option value="${r.Rep_Name}">${r.Rep_Name}</option>`).join('');
+      });
+    } else {
+      repGroup.style.display = 'none';
+    }
   }
 
   function submitNewCustomer() {
     const name = document.getElementById('new-cust-name').value.trim();
     const phone = document.getElementById('new-cust-phone').value.trim();
     if (!name || !phone) return showToast('Name and phone number are required.');
+    const isAdmin = currentUser && currentUser.role === 'Admin';
+    const selectedRep = isAdmin ? document.getElementById('new-cust-rep').value : '';
+    if (isAdmin && !selectedRep) return showToast('Please select which rep this customer belongs to.');
     const payload = {
       Customer_Name: name,
       Contact_No: phone,
@@ -1419,6 +1443,7 @@
       Google_Map: document.getElementById('new-cust-gmap').value.trim(),
       Notes: document.getElementById('new-cust-notes').value.trim()
     };
+    if (isAdmin) payload.Sales_Rep = selectedRep;
     if (newCustPhotoBase64) payload.Shop_Photo_Base64 = newCustPhotoBase64;
     apiCall('saveCustomer', { payload }).then(res => {
       if (!res.success) return showToast(res.message);
