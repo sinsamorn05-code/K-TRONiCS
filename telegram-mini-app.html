@@ -410,17 +410,27 @@
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Today</div>
           <div style="font-size:18px; font-weight:800; color:var(--brand);" id="ord-stat-today-count">0</div>
           <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-today-rev">$0.00</div>
+          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-today-cust">0 customers</div>
         </div>
         <div style="background:var(--success-light); border-radius:12px; padding:12px; text-align:center;">
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Week</div>
           <div style="font-size:18px; font-weight:800; color:var(--success);" id="ord-stat-week-count">0</div>
           <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-week-rev">$0.00</div>
+          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-week-cust">0 customers</div>
         </div>
         <div style="background:var(--warning-light); border-radius:12px; padding:12px; text-align:center;">
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Month</div>
           <div style="font-size:18px; font-weight:800; color:#B45309;" id="ord-stat-month-count">0</div>
           <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-month-rev">$0.00</div>
+          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-month-cust">0 customers</div>
         </div>
+      </div>
+      <div onclick="openUnpaidOrdersModal()" style="background:#FEF2F2; border-radius:12px; padding:12px; display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; cursor:pointer;">
+        <div>
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:2px;">Unpaid / Outstanding</div>
+          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-unpaid-count">0 orders</div>
+        </div>
+        <div style="font-size:18px; font-weight:800; color:#DC2626;" id="ord-stat-unpaid-total">$0.00</div>
       </div>
       <button onclick="toggleStatCustom('ord')" style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:12.5px; margin-bottom:8px;">
         <span><svg class="icon-svg" viewBox="0 0 24 24" style="width:14px;height:14px;margin-right:4px;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Custom Range</span><span id="ord-stat-custom-toggle-ic">▾</span>
@@ -433,6 +443,7 @@
         <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
           <div style="font-size:18px; font-weight:800; color:var(--brand);" id="ord-stat-custom-count">0</div>
           <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-custom-rev">$0.00</div>
+          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-custom-cust">0 customers</div>
         </div>
       </div>
       <div class="search-bar"><span class="ic"><svg class="icon-svg" viewBox="0 0 24 24" style="width:14px;height:14px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()"></div>
@@ -882,16 +893,48 @@
 
   // Orders tab's own dashboard (count + revenue for Today/This Week/This
   // Month, Confirmed orders only) -- independent of the Orders list filter.
+  let lastOrderDashboard = null;
   function loadOrderDashboard() {
     apiCall('getOrderDashboardStats').then(res => {
       if (!res.success) return;
+      lastOrderDashboard = res;
       document.getElementById('ord-stat-today-count').textContent = res.today.count;
       document.getElementById('ord-stat-today-rev').textContent = '$' + res.today.revenue.toFixed(2);
+      document.getElementById('ord-stat-today-cust').textContent = res.today.customers + ' customer' + (res.today.customers === 1 ? '' : 's');
       document.getElementById('ord-stat-week-count').textContent = res.thisWeek.count;
       document.getElementById('ord-stat-week-rev').textContent = '$' + res.thisWeek.revenue.toFixed(2);
+      document.getElementById('ord-stat-week-cust').textContent = res.thisWeek.customers + ' customer' + (res.thisWeek.customers === 1 ? '' : 's');
       document.getElementById('ord-stat-month-count').textContent = res.thisMonth.count;
       document.getElementById('ord-stat-month-rev').textContent = '$' + res.thisMonth.revenue.toFixed(2);
+      document.getElementById('ord-stat-month-cust').textContent = res.thisMonth.customers + ' customer' + (res.thisMonth.customers === 1 ? '' : 's');
+      document.getElementById('ord-stat-unpaid-count').textContent = res.unpaidCount + ' order' + (res.unpaidCount === 1 ? '' : 's');
+      document.getElementById('ord-stat-unpaid-total').textContent = '$' + res.unpaidTotal.toFixed(2);
     });
+  }
+
+  // "Unpaid / Outstanding" tile on the Orders tab -- reuses the same
+  // list-modal shell as the Check In / Customers tab tiles.
+  function openUnpaidOrdersModal() {
+    if (!lastOrderDashboard) return;
+    const list = lastOrderDashboard.unpaidList || [];
+    document.getElementById('visit-list-modal-title').innerHTML = 'Unpaid / Outstanding (' + list.length + ')';
+    const body = document.getElementById('visit-list-modal-body');
+    if (!list.length) {
+      body.innerHTML = `<div style="text-align:center; color:var(--text-sub); font-size:13px; padding:30px 10px;">Every confirmed order is fully paid.</div>`;
+    } else {
+      body.innerHTML = list.map(item => `
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 4px; border-bottom:1px solid var(--border);">
+          <div style="min-width:0;">
+            <div style="font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.Customer_Name || '-'}</div>
+            <div style="font-size:11.5px; color:var(--text-sub);">${item.SO_Number || ''} · ${item.Order_Date || '-'}</div>
+          </div>
+          <div style="text-align:right; white-space:nowrap;">
+            <div style="font-weight:800; font-size:13.5px; color:#DC2626;">$${item.Balance.toFixed(2)}</div>
+            <div style="font-size:10.5px; color:var(--text-sub);">of $${item.Total.toFixed(2)}</div>
+          </div>
+        </div>`).join('');
+    }
+    document.getElementById('visit-list-modal').classList.add('active');
   }
 
   // Toggles the "Custom Range" panel open/closed on a dashboard row
@@ -922,6 +965,7 @@
       if (!res.success) return;
       document.getElementById('ord-stat-custom-count').textContent = res.custom.count;
       document.getElementById('ord-stat-custom-rev').textContent = '$' + res.custom.revenue.toFixed(2);
+      document.getElementById('ord-stat-custom-cust').textContent = res.custom.customers + ' customer' + (res.custom.customers === 1 ? '' : 's');
     });
   }
 
