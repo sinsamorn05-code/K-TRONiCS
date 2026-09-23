@@ -408,21 +408,21 @@
       <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:16px;">
         <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Today</div>
-          <div style="font-size:18px; font-weight:800; color:var(--brand);" id="ord-stat-today-count">0</div>
-          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-today-rev">$0.00</div>
-          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-today-cust">0 customers</div>
+          <div style="font-size:17px; font-weight:800; color:var(--brand);" id="ord-stat-today-rev">$0.00</div>
+          <div style="font-size:11px; color:var(--text-sub); margin-top:2px;" id="ord-stat-today-count">0 orders</div>
+          <div style="font-size:9.5px; color:var(--text-sub);" id="ord-stat-today-cust">0 customers</div>
         </div>
         <div style="background:var(--success-light); border-radius:12px; padding:12px; text-align:center;">
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Week</div>
-          <div style="font-size:18px; font-weight:800; color:var(--success);" id="ord-stat-week-count">0</div>
-          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-week-rev">$0.00</div>
-          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-week-cust">0 customers</div>
+          <div style="font-size:17px; font-weight:800; color:var(--success);" id="ord-stat-week-rev">$0.00</div>
+          <div style="font-size:11px; color:var(--text-sub); margin-top:2px;" id="ord-stat-week-count">0 orders</div>
+          <div style="font-size:9.5px; color:var(--text-sub);" id="ord-stat-week-cust">0 customers</div>
         </div>
         <div style="background:var(--warning-light); border-radius:12px; padding:12px; text-align:center;">
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Month</div>
-          <div style="font-size:18px; font-weight:800; color:#B45309;" id="ord-stat-month-count">0</div>
-          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-month-rev">$0.00</div>
-          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-month-cust">0 customers</div>
+          <div style="font-size:17px; font-weight:800; color:#B45309;" id="ord-stat-month-rev">$0.00</div>
+          <div style="font-size:11px; color:var(--text-sub); margin-top:2px;" id="ord-stat-month-count">0 orders</div>
+          <div style="font-size:9.5px; color:var(--text-sub);" id="ord-stat-month-cust">0 customers</div>
         </div>
       </div>
       <div onclick="openUnpaidOrdersModal()" style="background:#FEF2F2; border-radius:12px; padding:12px; display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; cursor:pointer;">
@@ -441,9 +441,9 @@
           <input type="date" id="ord-stat-custom-end" class="field-input" style="margin-bottom:0;" onchange="loadOrderCustomStat()">
         </div>
         <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
-          <div style="font-size:18px; font-weight:800; color:var(--brand);" id="ord-stat-custom-count">0</div>
-          <div style="font-size:10px; color:var(--text-sub);" id="ord-stat-custom-rev">$0.00</div>
-          <div style="font-size:9.5px; color:var(--text-sub); margin-top:2px;" id="ord-stat-custom-cust">0 customers</div>
+          <div style="font-size:17px; font-weight:800; color:var(--brand);" id="ord-stat-custom-rev">$0.00</div>
+          <div style="font-size:11px; color:var(--text-sub); margin-top:2px;" id="ord-stat-custom-count">0 orders</div>
+          <div style="font-size:9.5px; color:var(--text-sub);" id="ord-stat-custom-cust">0 customers</div>
         </div>
       </div>
       <div class="search-bar"><span class="ic"><svg class="icon-svg" viewBox="0 0 24 24" style="width:14px;height:14px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><input type="text" id="orders-search" placeholder="Search orders..." oninput="renderOrders()"></div>
@@ -898,14 +898,14 @@
     apiCall('getOrderDashboardStats').then(res => {
       if (!res.success) return;
       lastOrderDashboard = res;
-      document.getElementById('ord-stat-today-count').textContent = res.today.count;
       document.getElementById('ord-stat-today-rev').textContent = '$' + res.today.revenue.toFixed(2);
+      document.getElementById('ord-stat-today-count').textContent = res.today.count + ' order' + (res.today.count === 1 ? '' : 's');
       document.getElementById('ord-stat-today-cust').textContent = res.today.customers + ' customer' + (res.today.customers === 1 ? '' : 's');
-      document.getElementById('ord-stat-week-count').textContent = res.thisWeek.count;
       document.getElementById('ord-stat-week-rev').textContent = '$' + res.thisWeek.revenue.toFixed(2);
+      document.getElementById('ord-stat-week-count').textContent = res.thisWeek.count + ' order' + (res.thisWeek.count === 1 ? '' : 's');
       document.getElementById('ord-stat-week-cust').textContent = res.thisWeek.customers + ' customer' + (res.thisWeek.customers === 1 ? '' : 's');
-      document.getElementById('ord-stat-month-count').textContent = res.thisMonth.count;
       document.getElementById('ord-stat-month-rev').textContent = '$' + res.thisMonth.revenue.toFixed(2);
+      document.getElementById('ord-stat-month-count').textContent = res.thisMonth.count + ' order' + (res.thisMonth.count === 1 ? '' : 's');
       document.getElementById('ord-stat-month-cust').textContent = res.thisMonth.customers + ' customer' + (res.thisMonth.customers === 1 ? '' : 's');
       document.getElementById('ord-stat-unpaid-count').textContent = res.unpaidCount + ' order' + (res.unpaidCount === 1 ? '' : 's');
       document.getElementById('ord-stat-unpaid-total').textContent = '$' + res.unpaidTotal.toFixed(2);
@@ -963,8 +963,8 @@
     if (!start || !end) return;
     apiCall('getOrderDashboardStats', { customStart: start, customEnd: end }).then(res => {
       if (!res.success) return;
-      document.getElementById('ord-stat-custom-count').textContent = res.custom.count;
       document.getElementById('ord-stat-custom-rev').textContent = '$' + res.custom.revenue.toFixed(2);
+      document.getElementById('ord-stat-custom-count').textContent = res.custom.count + ' order' + (res.custom.count === 1 ? '' : 's');
       document.getElementById('ord-stat-custom-cust').textContent = res.custom.customers + ' customer' + (res.custom.customers === 1 ? '' : 's');
     });
   }
