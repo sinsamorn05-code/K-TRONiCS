@@ -243,12 +243,7 @@
     </div>
 
     <div class="tab-content" id="tab-customers">
-      <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-bottom:16px;">
-        <div style="background:#EEF2FF; border-radius:12px; padding:12px; text-align:center;">
-          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Total</div>
-          <div style="font-size:20px; font-weight:800; color:#4F46E5;" id="cust-stat-total">0</div>
-          <div style="font-size:10px; color:var(--text-sub);">Customers</div>
-        </div>
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:8px;">
         <div style="background:var(--brand-light); border-radius:12px; padding:12px; text-align:center;">
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Today</div>
           <div style="font-size:20px; font-weight:800; color:var(--brand);" id="cust-stat-today">0</div>
@@ -263,6 +258,23 @@
           <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">This Month</div>
           <div style="font-size:20px; font-weight:800; color:#B45309;" id="cust-stat-month">0</div>
           <div style="font-size:10px; color:var(--text-sub);">New</div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-bottom:16px;">
+        <div style="background:#EEF2FF; border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Total</div>
+          <div style="font-size:20px; font-weight:800; color:#4F46E5;" id="cust-stat-total">0</div>
+          <div style="font-size:10px; color:var(--text-sub);">Customers</div>
+        </div>
+        <div onclick="openCustomerListModal('never-ordered')" style="background:#FEF2F2; border-radius:12px; padding:12px; text-align:center; cursor:pointer;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Never Ordered</div>
+          <div style="font-size:20px; font-weight:800; color:#DC2626;" id="cust-stat-never-ordered">0</div>
+          <div style="font-size:10px; color:var(--text-sub);">Customers</div>
+        </div>
+        <div onclick="openCustomerListModal('lapsed')" style="background:#FFF7ED; border-radius:12px; padding:12px; text-align:center; cursor:pointer;">
+          <div style="font-size:11px; color:var(--text-sub); margin-bottom:4px;">Lapsed (30+ days)</div>
+          <div style="font-size:20px; font-weight:800; color:#B45309;" id="cust-stat-lapsed">0</div>
+          <div style="font-size:10px; color:var(--text-sub);">Customers</div>
         </div>
       </div>
       <button onclick="toggleStatCustom('cust')" style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:12.5px; margin-bottom:8px;">
@@ -815,14 +827,57 @@
   // Customers tab's own dashboard (New Today/This Week/This Month) --
   // always shows the real current numbers, independent of whatever date
   // preset the Customers list below it is filtered to.
+  let lastCustomerDashboard = null;
   function loadCustomerDashboard() {
     apiCall('getCustomerDashboardStats').then(res => {
       if (!res.success) return;
+      lastCustomerDashboard = res;
       document.getElementById('cust-stat-total').textContent = res.total;
       document.getElementById('cust-stat-today').textContent = res.today;
       document.getElementById('cust-stat-week').textContent = res.thisWeek;
       document.getElementById('cust-stat-month').textContent = res.thisMonth;
+      document.getElementById('cust-stat-never-ordered').textContent = res.neverOrderedCount;
+      document.getElementById('cust-stat-lapsed').textContent = res.lapsedCount;
     });
+  }
+
+  // Never Ordered / Lapsed tiles on the Customers tab dashboard -- reuses
+  // the same list-modal shell as the Check In tab's Plan/Need/Never Visit
+  // tiles (visit-list-modal), but driven by lastCustomerDashboard instead
+  // of lastVisitOverview.
+  function openCustomerListModal(kind) {
+    if (!lastCustomerDashboard) return;
+    const titleMap = {
+      'never-ordered': 'Never Ordered (' + lastCustomerDashboard.neverOrderedCount + ')',
+      'lapsed': 'Lapsed 30+ Days (' + lastCustomerDashboard.lapsedCount + ')'
+    };
+    const emptyMap = {
+      'never-ordered': 'Every customer has placed at least one order.',
+      'lapsed': 'No customers are overdue for a reorder right now.'
+    };
+    const list = kind === 'never-ordered' ? lastCustomerDashboard.neverOrderedList : lastCustomerDashboard.lapsedList;
+    document.getElementById('visit-list-modal-title').innerHTML = titleMap[kind] || 'Customers';
+
+    const body = document.getElementById('visit-list-modal-body');
+    if (!list || !list.length) {
+      body.innerHTML = `<div style="text-align:center; color:var(--text-sub); font-size:13px; padding:30px 10px;">${emptyMap[kind] || 'Nothing here.'}</div>`;
+    } else {
+      body.innerHTML = list.map(item => {
+        const custId = String(item.Customer_ID || '').replace(/'/g, "\\'");
+        const safeName = String(item.Customer_Name || '').replace(/'/g, "\\'");
+        const subLine = kind === 'lapsed'
+          ? 'Last order: ' + (item.lastOrderDate || '-')
+          : (item.Contact_No ? item.Contact_No : 'No orders yet');
+        return `
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 4px; border-bottom:1px solid var(--border);">
+            <div style="min-width:0; cursor:pointer;" onclick="closeModal('visit-list-modal'); openCustomerVisitProfile('${custId}', '${safeName}')">
+              <div style="font-weight:700; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.Customer_Name || '-'}</div>
+              <div style="font-size:11.5px; color:var(--text-sub);">${subLine}${item.Sales_Rep ? ' · ' + item.Sales_Rep : ''}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+    document.getElementById('visit-list-modal').classList.add('active');
   }
 
   // Orders tab's own dashboard (count + revenue for Today/This Week/This
